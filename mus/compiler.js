@@ -4,7 +4,7 @@
   
   //not used
   var endTime = function( time, expr ) {
-    if( expr.tag === 'note' ) {
+    if( expr.tag === 'note' || expr.tag === 'rest' ) {
       return time + expr.dur;
     } else if( expr.tag === 'seq' ) {
       return endTime( time, expr.left ) + endTime( time, expr.right );
@@ -17,7 +17,7 @@
   };
   
   var compileT = function( time, expr ) {    
-    if( expr.tag === 'note' ) {
+    if( expr.tag === 'note' || expr.tag === 'rest' ) {
       expr.start = time;
       note.push( expr );
       time = time + expr.dur;
@@ -48,7 +48,7 @@
     },
     right: { 
       tag: 'seq',
-      left: { tag: 'note', pitch: 'c4', dur: 500 },
+      left: { tag: 'rest', dur: 500 },
       right: { tag: 'note', pitch: 'd4', dur: 500 } 
     } 
   };

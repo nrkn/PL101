@@ -30,11 +30,10 @@
         var regexInfo = pitchRegex.exec( pitch ),
             note = regexInfo[ 1 ],
             accidental = regexInfo[ 2 ] === '#' ? 1 : regexInfo[ 2 ] === 'b' ? -1 : 0,
-            octave = regexInfo[ 3 ],
-            pitch = 12 + 12 * octave + notes[ note ] + accidental;
+            octave = regexInfo[ 3 ];
 
         //memoize result before returning
-        return pitches[ pitch ] = pitch;
+        return pitches[ pitch ] = 12 + 12 * octave + notes[ note ] + accidental;
       },
 
       //all tags that are leaf nodes have this format

@@ -3,7 +3,7 @@ var compile;
   'use strict';
   var note = [],
       pitchRegex = /([a-g]\#?)([0-9])/,
-      location = [ 'root' ];
+      location = [];
   
   var locationToString = function() {
     return '[' + location.join( '.' ) + ']';
@@ -52,15 +52,19 @@ var compile;
   }; 
   
   var checkProperties = function( expr, properties ) {
+    location.push( expr.tag );
     for( var key in properties ) {
       if( properties.hasOwnProperty( key ) ) {
         var property = expr[ key ];
+        location.push( key );
         if( property === undefined ) {
           throw new PropertyNotFoundException( expr.tag, key );
         }
         properties[ key ]( expr[ key ] );
+        location.pop();
       }
     }
+    location.pop();
   };
   
   var checkNumber = function( num ) {
@@ -85,8 +89,6 @@ var compile;
     }
   };
   
-  //no actual check - just let the compiler catch exceptions recursively
-  //ok you should make it push/pop here instead while checking properties
   var checkExpr = function(){};
   
   var tagCompilers = {
@@ -123,10 +125,10 @@ var compile;
           'right': checkExpr
         });
 
-        location.push( 'par(left)' );
+        location.push( 'par.left' );
         var leftTime = compileTag( time, expr.left );        
         location.pop();
-        location.push( 'par(right)' );
+        location.push( 'par.right' );
         var rightTime = compileTag( time, expr.right );
         location.pop();
             
@@ -140,10 +142,10 @@ var compile;
           'right': checkExpr
         });
         
-        location.push( 'seq(left)' );
+        location.push( 'seq.left' );
         var leftTime = compileTag( time, expr.left );
         location.pop();
-        location.push( 'seq(right)' );
+        location.push( 'seq.right' );
         var rightTime = compileTag( leftTime, expr.right );
         location.pop();
         

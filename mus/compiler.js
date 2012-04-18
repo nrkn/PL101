@@ -34,13 +34,18 @@ var compile;
     this.message = '"' + tag + '" is expected to have a property named "' + property + '" at ' + locationToString();
   }
   
+  var pitches = {};
   var convertPitch = function( pitch ) {
+    if( pitches[ pitch ] !== undefined ) {
+      return pitches[ pitch ];
+    }
+    
     var notes = [ 'c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b' ],
         regexInfo = pitchRegex.exec( pitch ),
         note = regexInfo[ 1 ],
         octave = regexInfo[ 2 ];
     
-    return 12 + 12 * octave + ( notes.indexOf( note ) );
+    return pitches[ pitch ] = 12 + 12 * octave + ( notes.indexOf( note ) );
   };  
   
   var getBaseNoteItem = function( time, expr ) {

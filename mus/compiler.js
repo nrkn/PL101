@@ -13,6 +13,11 @@
           rightTime = endTime( time, expr.right );
 
       return Math.max( leftTime, rightTime );
+    } else if( expr.tag === 'repeat' ) {      
+      for( var i = 0; i < expr.count; i++ ) {
+        time = endTime( time, expr.section );
+      }
+      return time;
     }
   };
   
@@ -45,6 +50,10 @@
     } else if( expr.tag === 'seq' ) {
       time = compileT( time, expr.left );
       time = compileT( time, expr.right );
+    } else if( expr.tag === 'repeat' ) {
+      for( var i = 0; i < expr.count; i++ ) {
+        time = compileT( time, expr.section );
+      }
     }
     return time;
   };
@@ -54,7 +63,7 @@
     return note;
   };
   
-  
+  /*
   var melody_mus = { 
     tag: 'par',
     left: { 
@@ -68,6 +77,7 @@
       right: { tag: 'note', pitch: 'g4', dur: 250 } 
     } 
   };
+  */
   
   /*
   var melody_mus = { 
@@ -85,17 +95,24 @@
   };  
   */
   
-  /*
   var melody_mus = { 
     tag: 'seq',
     left: { 
       tag: 'seq',
       left: { tag: 'note', pitch: 'a4', dur: 250 },
-      right: { tag: 'note', pitch: 'b4', dur: 250 } 
+      right: {
+        tag: 'seq',
+        left: { tag: 'rest', dur: 250 },
+        right: { tag: 'note', pitch: 'b4', dur: 250 }
+      }      
     },
     right: { 
       tag: 'seq',
-      left: { tag: 'note', pitch: 'c4', dur: 500 },
+      left: { 
+        tag: 'repeat',  
+        section: { tag: 'note', pitch: 'c4', dur: 250 },
+        count: 3
+      },
       right: { 
         tag: 'par',
         left: {
@@ -111,7 +128,7 @@
       } 
     } 
   };
-  */
+  
 
   console.log( melody_mus );
   console.log( compile( melody_mus ) );  

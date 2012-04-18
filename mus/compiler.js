@@ -2,31 +2,36 @@ var compile;
 (function(){
   'use strict';
   var note = [],
-      pitchRegex = /([a-g]\#?)([0-9])/;
+      pitchRegex = /([a-g]\#?)([0-9])/,
+      location = [ 'root' ];
+  
+  var locationToString = function() {
+    return '[' + location.join( '.' ) + ']';
+  };  
   
   function InvalidPitchException( pitch ) {
     this.name = 'InvalidPitchExpection';
-    this.message = '"' + pitch + '" is not a valid pitch';
+    this.message = '"' + pitch + '" is not a valid pitch at ' + locationToString();
   }
   
   function InvalidDurationException( dur ) {
     this.name = 'InvalidDurationException';
-    this.message = '"' + dur + '" is not a valid duration';
+    this.message = '"' + dur + '" is not a valid duration at ' + locationToString();
   }  
   
   function InvalidCountException( count ) {
     this.name = 'InvalidCountException';
-    this.message = '"' + count + '" is not a valid count';
+    this.message = '"' + count + '" is not a valid count at ' + locationToString();
   }
   
   function UnrecognizedTagException( tag ) {
     this.name = 'UnrecognizedTagException';
-    this.message = 'No handler found for tag "' + tag + '"'; 
+    this.message = 'No handler found for tag "' + tag + '" at ' + locationToString();
   }
   
   function PropertyNotFoundException( tag, property ) {
     this.name = 'PropertyNotFoundException';
-    this.message = '"' + tag + '" is expected to have a property named "' + property + '"';
+    this.message = '"' + tag + '" is expected to have a property named "' + property + '" at ' + locationToString();
   }
   
   var convertPitch = function( pitch ) {
@@ -44,17 +49,19 @@ var compile;
       dur: expr.dur,
       start: time
     };
-  }  
+  }; 
   
   var checkProperties = function( expr, properties ) {
     for( var key in properties ) {
-      var property = expr[ key ];
-      if( property === undefined ) {
-        throw new PropertyNotFoundException( expr.tag, key );
+      if( properties.hasOwnProperty( key ) ) {
+        var property = expr[ key ];
+        if( property === undefined ) {
+          throw new PropertyNotFoundException( expr.tag, key );
+        }
+        properties[ key ]( expr[ key ] );
       }
-      properties[ key ]( expr[ key ] );
     }
-  }
+  };
   
   var checkNumber = function( num ) {
     return !isNaN( Number( num ) ) && num >= 0;
@@ -78,6 +85,10 @@ var compile;
     }
   };
   
+  //no actual check - just let the compiler catch exceptions recursively
+  //ok you should make it push/pop here instead while checking properties
+  var checkExpr = function(){};
+  
   var tagCompilers = {
     'rest': {
       compile: function( time, expr ) {
@@ -86,6 +97,7 @@ var compile;
         });
         
         note.push( getBaseNoteItem( time, expr ) );
+        
         return time + expr.dur;
       }
     },
@@ -98,48 +110,59 @@ var compile;
         
         var result = getBaseNoteItem( time, expr );
         result.pitch = convertPitch( expr.pitch );
+        
         note.push( result );
+        
         return time + expr.dur;
       }
     },
     'par': {
       compile: function( time, expr ) {
-        //if there's anything wrong with these expressions they'll fail later
         checkProperties( expr, { 
-          'left': function(){}, 
-          'right': function(){}
+          'left': checkExpr, 
+          'right': checkExpr
         });
 
-        var leftTime = compileTag( time, expr.left ),
-            rightTime = compileTag( time, expr.right );
+        location.push( 'par(left)' );
+        var leftTime = compileTag( time, expr.left );        
+        location.pop();
+        location.push( 'par(right)' );
+        var rightTime = compileTag( time, expr.right );
+        location.pop();
             
         return Math.max( leftTime, rightTime );
       }
     },
     'seq': {
       compile: function( time, expr ) {
-        //if there's anything wrong with these expressions they'll fail later
         checkProperties( expr, { 
-          'left': function(){}, 
-          'right': function(){}
+          'left': checkExpr, 
+          'right': checkExpr
         });
         
+        location.push( 'seq(left)' );
         var leftTime = compileTag( time, expr.left );
-        return compileTag( leftTime, expr.right );
+        location.pop();
+        location.push( 'seq(right)' );
+        var rightTime = compileTag( leftTime, expr.right );
+        location.pop();
+        
+        return rightTime;
       }
     },
     'repeat': {
       compile: function( time, expr ) {
         checkProperties( expr, { 
-          //if there's anything wrong with section it'll fail later
-          'section': function(){}, 
+          'section': checkExpr, 
           'count': checkCount
         });
         
         var repeatedTime = time;
+        
         for( var i = 0; i < expr.count; i++ ) {
           repeatedTime = compileTag( repeatedTime, expr.section );
         }
+        
         return repeatedTime;
       }    
     }
@@ -147,14 +170,17 @@ var compile;
   
   var compileTag = function( time, expr ) {
     var compiler = tagCompilers[ expr.tag ];
+    
     if( compiler !== undefined ) {
       return compiler.compile( time, expr );
     }
+    
     throw new UnrecognizedTagException( expr.tag );
   };
 
-  compile = function( musexpr ) {
-    compileTag( 0, musexpr );
+  compile = function( expr ) {
+    compileTag( 0, expr );
+    
     return note;
   };
 }());

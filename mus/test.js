@@ -6,7 +6,7 @@ var testMus = {
         right: {
           tag: 'seq',
           left: { tag: 'rest', dur: 250 },
-          right: { tag: 'note', pitch: 'b4', dur: 250 }
+          right: { tag: 'note', pitch: 'bb4', dur: 250 }
         }
       },
       right: {
@@ -20,7 +20,7 @@ var testMus = {
           tag: 'par',
           left: {
             tag: 'note',
-            pitch: 'd4',
+            pitch: 'd#4',
             dur: 500
           },
           right: {

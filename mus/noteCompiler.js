@@ -2,9 +2,17 @@
   'use strict';
 
   var note = [],
-      //none of the samples so far have sharps so just assuming x# notation
-      pitchRegex = /([a-g]\#?)([0-9])/,
-      notes = [ 'c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b' ],
+      //none of the samples have accidentals so assuming x#/xb notation
+      pitchRegex = /([a-g])(\#|b)?([0-9])/,
+      notes = { 
+        c: 0,
+        d: 2,
+        e: 4,
+        f: 5,
+        g: 7,
+        a: 9,
+        b: 11
+      },
       pitches = {},
       location = [],
 
@@ -21,10 +29,12 @@
 
         var regexInfo = pitchRegex.exec( pitch ),
             note = regexInfo[ 1 ],
-            octave = regexInfo[ 2 ];
+            accidental = regexInfo[ 2 ] === '#' ? 1 : regexInfo[ 2 ] === 'b' ? -1 : 0,
+            octave = regexInfo[ 3 ],
+            pitch = 12 + 12 * octave + notes[ note ] + accidental;
 
         //memoize result before returning
-        return pitches[ pitch ] = 12 + 12 * octave + ( notes.indexOf( note ) );
+        return pitches[ pitch ] = pitch;
       },
 
       //all tags that are leaf nodes have this format

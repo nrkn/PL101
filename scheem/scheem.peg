@@ -8,10 +8,6 @@ atom =
     chars: validchar+
         { return chars.join( '' ); }
 
-subs = 
-    ignore+ expr: expression 
-        { return expr; }
-
 whitespace =
     [ \t\r\n]
  
@@ -20,7 +16,11 @@ comment =
 
 ignore =
     whitespace
-  / comment
+  / comment        
+
+subs = 
+    ignore+ expr: expression 
+        { return expr; }
     
 startlist =
     ignore* "(" ignore*

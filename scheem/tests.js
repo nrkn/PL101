@@ -13,10 +13,10 @@ fs.readFile( 'scheem.peg', 'utf-8', function( err, data ) {
   //basic case
   assert.deepEqual( parse( '(a b c)' ), [ 'a', 'b', 'c' ] );
   
-  //first example from homework
+  //1st example from homework
   assert.deepEqual( parse( '(+ 1 (* x 3))' ), [ '+', '1', [ '*', 'x', '3' ] ] );
   
-  //first example from homework
+  //2nd example from homework
   assert.deepEqual( parse( '(* n (factorial (- n 1)))' ), [ '*', 'n', [ 'factorial', [ '-', 'n', '1' ] ] ] );
   
   //any number of spaces between atoms
@@ -35,5 +35,5 @@ fs.readFile( 'scheem.peg', 'utf-8', function( err, data ) {
   assert.deepEqual( parse( "'(+ 1 (* x '3))" ), [ 'quote', [ '+', '1', [ '*', 'x', [ 'quote', '3' ] ] ] ] );  
   
   //comments
-  assert.deepEqual( parse( '(+ a;;lorem ipsum\n(a b));;lorem ipsum' ), [ '+', 'a', [ 'a', 'b' ] ] );
+  assert.deepEqual( parse( ';;lorem ipsum\n(+ a;;lorem ipsum\n(a;;(+ a b)\r\nb));;lorem ipsum' ), [ '+', 'a', [ 'a', 'b' ] ] );
 });

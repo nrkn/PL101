@@ -1,0 +1,76 @@
+Unimplemented from MML:
+  nx - note x - need way to translate this to octave/note
+  < & >
+  v - ignore
+
+Timing:
+  Figure out durations, taking into account:
+    tempo
+    len 
+    duration
+    extend
+    modifier
+    Defaults are:
+      tempo[32..255] 120
+      len[1..64] 1
+      octave[0..7] 4
+      duration[1..64] 1
+      extend 0 (if > 0 loop, each loop duration *= 1.5)
+      modifier[lsn] n
+      
+  tempo is QUARTER NOTES PER MINUTE    
+  modifier
+    l = play note for full duration
+    s = staccato - play note for 3/4 duration then rest 1/4
+    n = normal - play note for 7/8 duration then rest 1/8    
+  
+  if duration is present it overrides len without changing len
+  
+  ok so it's not so hard!  
+
+Implement MUS:
+  sequence
+    the whole thing is pretty much a sequence
+  par
+    extend mml syntax to have par - ',' seems to be used by at least one but maybe nicer 
+  note
+    where sequences have an odd number of elements
+  rest
+    from pause
+    
+Extended syntax (maybe):
+  ( ) denotes sequence - defaults are reset
+  , denotes par - defaults are reset
+ 
+
+Would be nice:
+  var x = expression
+  include( x )  
+  
+So:
+
+  a, 
+  (ab),
+  (ab,cd)  
+  
+  but this should work too:
+    a,
+    (b)
+    
+    or:
+      ab,
+      cd
+      
+    or:
+    a,b,c,d
+   
+Tests - hah write them last :P
+
+Comments - see tests muahahahaha
+
+Notes:
+  MML player:
+  http://yomogi.sakura.ne.jp/~si/SolidImage/sion/mmleditor.html
+  MML specs:
+  http://web.archive.org/web/20031122201442/http://www.clipx.net/ng/qbasic/ng24dc8.php
+  http://en.wikipedia.org/wiki/Music_Macro_Language

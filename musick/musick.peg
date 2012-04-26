@@ -1,0 +1,160 @@
+start =
+    expression
+
+expression =
+    subsequences: subsequence*
+        {
+          var result = [],
+              initial = {
+                modifier: { arg: 'n' },
+                octave: { arg: 4 },
+                len: { arg: 1 },
+                tempo: { arg: 120 }
+              };
+          
+          for( var i = 0; i < subsequences.length; i++ ) {
+            var subsequence = subsequences[ i ],
+                defines = subsequence.defines,
+                elements = subsequence.elements;
+                
+            if( i == 0 ) {
+              defines.modifier = defines.modifier ? defines.modifier : initial.modifier;
+              defines.octave = defines.octave ? defines.octave : initial.octave;
+              defines.len = defines.len ? defines.len : initial.len;
+              defines.tempo = defines.tempo ? defines.tempo : initial.tempo;
+            } else {
+              defines.modifier = defines.modifier ? defines.modifier : subsequences[ i  - 1 ].defines.modifier;
+              defines.octave = defines.octave ? defines.octave : subsequences[ i  - 1 ].defines.octave;
+              defines.len = defines.len ? defines.len : subsequences[ i  - 1 ].defines.len;
+              defines.tempo = defines.tempo ? defines.tempo : subsequences[ i  - 1 ].defines.tempo;
+            }
+            
+            for( var e = 0; e < elements.length; e++ ) {
+              var element = elements[ e ];
+                  
+              if( element.tag === 'note' ) {
+                element.modifier = defines.modifier ? defines.modifier.arg : '';
+                element.octave = defines.octave ? defines.octave.arg : '';
+              }                 
+              
+              element.len = defines.len ? defines.len.arg : '';
+              element.tempo = defines.tempo ? defines.tempo.arg : '';
+              
+              result.push( element );
+            }
+          }
+          return result;
+        }        
+
+digit =
+    [0-9]
+    
+integer =
+    digits: digit+ 
+        { return parseInt( digits.join( '' ), 10 ); }
+        
+whitespace =
+    [ \t\r\n]
+    
+noteletter =
+    letter: [a-g]i
+        { return letter.toLowerCase(); }
+
+accidental =
+    sign: [+#-]
+        { return sign === '+' || sign === '#' ? '#' : 'b'; }
+        
+duration =
+    integer
+        
+note =
+    whitespace* noteletter: noteletter accidental: accidental? duration: duration? extend: '.'* whitespace*
+        { 
+          return { 
+            tag: 'note',
+            note: noteletter, 
+            accidental: accidental,
+            duration: duration,
+            extend: extend.length
+          };
+        }
+
+pause =
+    whitespace* [pr]i duration: duration? extend: '.'* whitespace*
+        {
+          return {
+            tag: 'pause',
+            duration: duration,
+            extend: extend.length
+          };
+        }    
+
+element =
+    note
+  / pause 
+
+modifier =
+    whitespace* 'm'i whitespace* arg: [fblsn]i whitespace* 
+        {  
+          return {
+            tag: 'modifier',
+            arg: arg
+          };
+        }
+        
+tempo =
+    whitespace* 't'i whitespace* arg: integer whitespace* 
+        {
+          return {
+            tag: 'tempo',
+            arg: arg
+          };
+        }
+        
+octave =
+    whitespace* 'o'i whitespace* arg: [0-6] whitespace* 
+        {
+          return {
+            tag: 'octave',
+            arg: parseInt( arg, 10 )
+          }
+        }
+        
+len =
+    whitespace* 'l'i whitespace* arg: duration whitespace* 
+        {
+          return {
+            tag: 'len',
+            arg: arg
+          };
+        }
+
+define =
+    modifier
+  / tempo
+  / octave
+  / len
+
+defines = 
+    defines: define* 
+        {
+          var result = {};
+        
+          
+          for( var i = 0; i < defines.length; i++ ) {
+            result[ defines[ i ].tag ] = defines[ i ];
+          }
+          
+          
+          return result;
+        }
+
+subsequence =
+    defines: defines elements: element+
+        { 
+          return {
+            tag: 'subsequence',
+            defines: defines,
+            elements: elements
+          };
+        }

@@ -3,6 +3,11 @@ Unimplemented from MML:
   < & >
   v - ignore
 
+Issues:
+  For a lot of the numbers I'm using integer cos too lazy to do a parsing grammar for the correct 
+  range. Fix.
+  
+  
 Timing:
   Figure out durations, taking into account:
     tempo

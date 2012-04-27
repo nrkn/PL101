@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Note Player</title>
+    <script src="http://code.jquery.com/jquery-1.7.2.min.js"></script>
+    <script src="audiolib.min.js"></script>
+    <script src="starwars.song.js"></script>
+    <script src="player.js"></script>
+    <script>
+      $(document).ready(function(){
+        $( '#play' ).click(function(){
+          play(  );
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <textarea id="note"></textarea>
+    <button id="play">Play</button>
+  </body>
+</html>

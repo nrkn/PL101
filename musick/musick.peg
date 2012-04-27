@@ -1,8 +1,9 @@
 start =
     expression
-
+  
 expression =
-    subsequences: subsequence*
+    repeat
+  / subsequences: subsequence*
         {
           var result = [],
               initial = {
@@ -17,33 +18,88 @@ expression =
                 defines = subsequence.defines,
                 elements = subsequence.elements;
                 
+            //if the first element in the sequence has any undefineds, use the initial settings
             if( i == 0 ) {
               defines.modifier = defines.modifier ? defines.modifier : initial.modifier;
               defines.octave = defines.octave ? defines.octave : initial.octave;
               defines.len = defines.len ? defines.len : initial.len;
               defines.tempo = defines.tempo ? defines.tempo : initial.tempo;
             } else {
+              //otherwise if an element has any undefined, copy them from the previous element
               defines.modifier = defines.modifier ? defines.modifier : subsequences[ i  - 1 ].defines.modifier;
               defines.octave = defines.octave ? defines.octave : subsequences[ i  - 1 ].defines.octave;
               defines.len = defines.len ? defines.len : subsequences[ i  - 1 ].defines.len;
               defines.tempo = defines.tempo ? defines.tempo : subsequences[ i  - 1 ].defines.tempo;
             }
             
+            var msPerBeat = 60000 / ( defines.tempo.arg / 4 );
+            
             for( var e = 0; e < elements.length; e++ ) {
-              var element = elements[ e ];
+              var element = elements[ e ],
+                  musElement = {
+                    tag: element.tag,
+                    dur: msPerBeat / ( element.duration !== '' ? element.duration : defines.len.arg )
+                  };
                   
+              //each . in the mml format extends the duration by half again
+              if( element.extend > 0  ) {
+                musElement.dur *= Math.pow( 1.5, element.extend );
+              }
+
               if( element.tag === 'note' ) {
-                element.modifier = defines.modifier ? defines.modifier.arg : '';
-                element.octave = defines.octave ? defines.octave.arg : '';
-              }                 
-              
-              element.len = defines.len ? defines.len.arg : '';
-              element.tempo = defines.tempo ? defines.tempo.arg : '';
-              
-              result.push( element );
+                musElement.pitch = element.note + element.accidental + defines.octave.arg;                
+                //legato
+                if( defines.modifier.arg === 'l' ) {
+                  result.push( musElement );
+                } else {          
+                  //staccato or normal
+                  var mod = defines.modifier.arg === 's' ? 0.75 : 0.875,
+                      restMod = 1 - mod;
+                      rest = {
+                        tag: 'rest',
+                        dur: musElement.dur * restMod
+                      };
+                  musElement.dur *= mod;
+                  result.push( musElement );
+                  result.push( rest );                
+                }
+              } else {
+                result.push( musElement );
+              }               
             }
           }
-          return result;
+          
+          if( result.length === 0 ) {
+            return undefined;
+          }
+          
+          if( result.length === 1 ) {
+            return result[ 0 ];
+          }
+
+          var mus = {
+                tag: 'seq',
+                left: {},
+                right: {}
+              },
+              lastSeq = mus,
+              thisSeq = {};
+          
+          for( var i = 0; i < result.length; i++ ) {
+            if( i < result.length - 1 ) {
+              thisSeq = lastSeq;
+              lastSeq.left = result[ i ];
+              lastSeq = lastSeq.right = {
+                tag: 'seq',
+                left: {},
+                right: {}
+              };
+            } else {
+              thisSeq.right = result[ i ];
+            }
+          }     
+          
+          return mus;
         }        
 
 digit =
@@ -79,11 +135,11 @@ note =
           };
         }
 
-pause =
+rest =
     whitespace* [pr]i duration: duration? extend: '.'* whitespace*
         {
           return {
-            tag: 'pause',
+            tag: 'rest',
             duration: duration,
             extend: extend.length
           };
@@ -91,7 +147,7 @@ pause =
 
 element =
     note
-  / pause 
+  / rest 
 
 modifier =
     whitespace* 'm'i whitespace* arg: [fblsn]i whitespace* 
@@ -156,5 +212,15 @@ subsequence =
             tag: 'subsequence',
             defines: defines,
             elements: elements
+          };
+        }
+        
+repeat = 
+    whitespace* '*' whitespace* times: integer whitespace* '(' whitespace* expression: expression whitespace* ')' whitespace*
+        {
+          return {
+            tag: 'repeat',
+            expression: expression,
+            times: times
           };
         }

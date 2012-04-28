@@ -1,16 +1,74 @@
 start =
     expression
+
+repeat = 
+    "*" ignore* count: integer ignore* expr: expression
+        { 
+          return {
+            tag: 'repeat',
+            count: count,
+            section: expr
+          }; 
+        }
+
+startlist =
+    ignore* "(" ignore*
+    
+endlist =   
+    ignore* ")" ignore*        
+        
+par =
+    startlist start: expression rest: parsubs* endlist
+        { 
+          var result = [ start ].concat( rest ); 
+          
+          if( result.length === 1 ) {
+            return result[ 0 ];
+          }
+          
+          var par = {
+                tag: 'par',
+                left: {},
+                right: {}
+              },
+              lastPar = par,
+              thisPar = {};
+          
+          for( var i = 0; i < result.length; i++ ) {
+            if( i < result.length - 1 ) {
+              thisPar = lastPar;
+              lastPar.left = result[ i ];
+              lastPar = lastPar.right = {
+                tag: 'par',
+                left: {},
+                right: {}
+              };
+            } else {
+              thisPar.right = result[ i ];
+            }
+          }     
+          
+          return par;        
+        }
+        
+parsubs = 
+    ignore* "," ignore* expr: expression 
+        { return expr; }
+        
+expression =  
+    par
+  / repeat
+  / notes
   
-expression =
-    repeat
-  / subsequences: subsequence*
+notes =
+    subsequences: subsequence*
         {
           var result = [],
               initial = {
                 modifier: { arg: 'n' },
                 octave: { arg: 4 },
                 len: { arg: 1 },
-                tempo: { arg: 120 }
+                tempo: { arg: 120 }                
               };
           
           for( var i = 0; i < subsequences.length; i++ ) {
@@ -23,7 +81,7 @@ expression =
               defines.modifier = defines.modifier ? defines.modifier : initial.modifier;
               defines.octave = defines.octave ? defines.octave : initial.octave;
               defines.len = defines.len ? defines.len : initial.len;
-              defines.tempo = defines.tempo ? defines.tempo : initial.tempo;
+              defines.tempo = defines.tempo ? defines.tempo : initial.tempo;              
             } else {
               //otherwise if an element has any undefined, copy them from the previous element
               defines.modifier = defines.modifier ? defines.modifier : subsequences[ i  - 1 ].defines.modifier;
@@ -47,9 +105,18 @@ expression =
               }
 
               if( element.tag === 'note' ) {
-                musElement.pitch = element.note + element.accidental + defines.octave.arg;                
+                if( defines.shiftoctave ) {
+                  defines.octave.arg += ( defines.shiftoctave.arg === '<' ? -1 : 1 );
+                  defines.shiftoctave = null;
+                }
+                
+                defines.octave.arg = ( defines.octave.arg < 0 ) ? 0 : ( defines.octave.arg > 6 ) ? 6 : defines.octave.arg;
+                
+                var octave = element.octave !== undefined ? element.octave : defines.octave.arg;
+                
+                musElement.pitch = element.note + element.accidental + octave; 
                 //legato
-                if( defines.modifier.arg === 'l' ) {
+                if( [ 'l', 'f', 'b' ].indexOf( defines.modifier.arg ) !== -1 ) {
                   result.push( musElement );
                 } else {          
                   //staccato or normal
@@ -111,6 +178,13 @@ integer =
         
 whitespace =
     [ \t\r\n]
+
+comment =
+    ';;' [^\r\n]*
+
+ignore =
+    whitespace
+  / comment   
     
 noteletter =
     letter: [a-g]i
@@ -124,7 +198,8 @@ duration =
     integer
         
 note =
-    whitespace* noteletter: noteletter accidental: accidental? duration: duration? extend: '.'* whitespace*
+    numberedNote
+  / ignore* noteletter: noteletter accidental: accidental? duration: duration? extend: '.'* ignore*
         { 
           return { 
             tag: 'note',
@@ -135,8 +210,38 @@ note =
           };
         }
 
+numberedNote = 
+    ignore* 'n'i num: integer ignore*       
+        {
+          num = ( num < 0 ) ? 0 : ( num > 84 ) ? 84 : num;
+          
+          if( num === 0 ) {
+            return {
+              tag: 'rest',
+              duration: '',
+              extend: 0
+            };
+          }          
+          
+          var notes =       'ccdeeffgaabb',
+              accidentals = ' # b  # b b ';
+              noteletter = ( num % 12 == 0 ) ? 'b' : notes[ ( num % 12 ) - 1 ],
+              accidental = ( num % 12 == 0 ) ? ' ' : accidentals[ ( num % 12 ) - 1 ],
+              octave = Math.floor( ( num - 1 ) / 12 );
+              
+          var result = {
+            tag: 'note',
+            note: noteletter, 
+            accidental: accidental === ' ' ? '' : accidental,
+            duration: '',
+            octave: octave
+          };          
+
+          return result;          
+        }
+        
 rest =
-    whitespace* [pr]i duration: duration? extend: '.'* whitespace*
+    ignore* [pr]i duration: duration? extend: '.'* ignore*
         {
           return {
             tag: 'rest',
@@ -150,7 +255,7 @@ element =
   / rest 
 
 modifier =
-    whitespace* 'm'i whitespace* arg: [fblsn]i whitespace* 
+    ignore* 'm'i ignore* arg: [fblsn]i ignore* 
         {  
           return {
             tag: 'modifier',
@@ -159,7 +264,7 @@ modifier =
         }
         
 tempo =
-    whitespace* 't'i whitespace* arg: integer whitespace* 
+    ignore* 't'i ignore* arg: integer ignore* 
         {
           return {
             tag: 'tempo',
@@ -168,7 +273,7 @@ tempo =
         }
         
 octave =
-    whitespace* 'o'i whitespace* arg: [0-6] whitespace* 
+    ignore* 'o'i ignore* arg: [0-6] ignore* 
         {
           return {
             tag: 'octave',
@@ -177,7 +282,7 @@ octave =
         }
         
 len =
-    whitespace* 'l'i whitespace* arg: duration whitespace* 
+    ignore* 'l'i ignore* arg: duration ignore* 
         {
           return {
             tag: 'len',
@@ -185,11 +290,21 @@ len =
           };
         }
 
+shiftoctave =
+    ignore* arg:[<>] ignore*
+      {
+        return {
+          tag: 'shiftoctave',
+          arg: arg
+        };
+      }
+        
 define =
     modifier
   / tempo
   / octave
   / len
+  / shiftoctave
 
 defines = 
     defines: define* 
@@ -212,15 +327,5 @@ subsequence =
             tag: 'subsequence',
             defines: defines,
             elements: elements
-          };
-        }
-        
-repeat = 
-    whitespace* '*' whitespace* times: integer whitespace* '(' whitespace* expression: expression whitespace* ')' whitespace*
-        {
-          return {
-            tag: 'repeat',
-            expression: expression,
-            times: times
           };
         }

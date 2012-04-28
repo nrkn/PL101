@@ -106,7 +106,7 @@
 
             note.push( getBaseNoteItem( time, expr ) );
 
-            return time + expr.dur;
+            return ( time * 1 + expr.dur * 1 ).toFixed( 2 );
           }
         },
         'note': {
@@ -121,7 +121,7 @@
 
             note.push( result );
 
-            return time + expr.dur;
+            return ( time * 1 + expr.dur * 1 ).toFixed( 2 );
           }
         },
         'par': {
@@ -180,7 +180,7 @@
         var compiler = tagCompilers[ expr.tag ];
 
         if( compiler !== undefined ) {
-          return compiler.compile( time, expr );
+          return ( compiler.compile( time, expr ) * 1 ).toFixed( 2 );
         }
 
         throw new UnrecognizedTagException( expr.tag );

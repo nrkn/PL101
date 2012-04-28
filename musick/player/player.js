@@ -1,59 +1,6 @@
-function noteToSong( note ) {
-  var song = [];
-  
-  //find gaps in note (if any) and fill with rests
-  
-  for( var i = 0; i < note.length; i++ ) {
-    song.push({
-      freq: [ note[ i ].tag === 'rest' ? 0 : midiNoteToFrequency( note[ i ].pitch ) ],
-      dur: note[ i ].dur
-    });
-  }
-  return song;
-}
-
-function midiNoteToFrequency( note ) {
-  if( note >= 0 && note <= 119 ) {
-    return 440 * Math.pow( 2, ( note - 57 ) / 12 );
-  }
-  return -1;
-}
-
-var simpleSong = [
-	{
-		freq: [329.63, 440, 554.37], // E4, A4, C#5 
-		dur: 500
-	},
-	{
-		freq: [329.63], // E4
-		dur: 250
-	},
-	{
-		freq: [329.63, 440 ], // E4
-		dur: 250
-	},
-	{
-		freq: [329.63, 554.37 ], // E4
-		dur: 250
-	},
-	{
-		freq: [329.63], // E4
-		dur: 250
-	},
-	{
-		freq: [329.63, 440, 554.37], // E4, A4, C#5 
-		dur: 500
-	},
-	{
-		freq: [440], // A4
-		dur: 500
-	}
-];
-
-//var	theme = noteToSong( starWars ),
-var	theme = starWars,
+var	theme,
 	noteCount = 0,
-	noteTotal = theme.length,
+	noteTotal,
 	leadNoteLength = 0,
 	leadCount = 0,
 	fade = 0,
@@ -140,7 +87,9 @@ function audioCallback(buffer, channelCount){
 	}	
 };
 
-function play() {
+function play( source, inFormat ) {
+  theme = inFormat === '.song' ? JSON.parse( source ) : compile( source, inFormat );
+  noteTotal = theme.length;
   playing = true;
 
   // Create an instance of the AudioDevice class

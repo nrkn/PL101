@@ -1,10 +1,23 @@
 (function(){
   'use strict';
   
+  var debugMode = false;
+  
   Array.prototype.unique = function(){
     return this.filter(function(s, i, a){
       return i === a.lastIndexOf( s );
     });
+  }
+  
+  //because Number.toFixed rounds FFS
+  function toFixed( num ) {
+    return Math.floor( num * 100 ) / 100;
+  }
+  
+  function log( name, message ) {
+    if( debugMode ) {
+      console.log( name + ': \n' + JSON.stringify( message, null, 2 ) );
+    }
   }
   
   function start( notes ) {
@@ -25,23 +38,14 @@
     return Math.max.apply( Math, noteEnds );
   }  
 
-  function addEnds( notes ) {
-    for( var i = 0; i < notes.length; i++ ) {
-      notes[ i ].start *= 1;
-      notes[ i ].dur *= 1;
-      notes[ i ].end = notes[ i ].start + notes[ i ].dur;
-    }
-    return notes;
-  }
-
   function intersectingNotes( notes ) {
     var results = [];
-    addEnds( notes );
     for( var i = 0; i < notes.length; i++ ) {
       var outer = notes[ i ];
       for( var j = i + 1; j < notes.length; j++ ) {
         var inner = notes[ j ];
-        if( outer.start !== inner.start ) {
+        
+        if( outer.start !== inner.start ) {          
           if( outer.end <= inner.start ) {
             continue;
           }
@@ -118,7 +122,15 @@
     return result;
   }
 
-  function groupData( notes ) {
+  function normalizeNotes( notes ) {
+    for( var i = 0; i < notes.length; i++ ) {
+      notes[ i ].start = toFixed( notes[ i ].start );
+      notes[ i ].dur = toFixed( notes[ i ].dur );
+      notes[ i ].end = toFixed( notes[ i ].start + notes[ i ].dur );
+    }
+  }
+  
+  function groupData( notes ) {   
     var groups = groupNotes( notes ),
         data = [];
     for( var i = 0; i < groups.length; i++ ) {
@@ -144,6 +156,9 @@
     
     addRests( data );
     addTimes( data );
+    
+    log( "groupData", data );
+    
     return data;
   }
 
@@ -207,7 +222,7 @@
       times.push( element.start );
       times.push( element.end );
     }
-    return times.unique().sort();
+    return times.unique().sort(function(a,b){ return a -b; });
   }
 
   function addTimes( data ) {
@@ -221,6 +236,7 @@
   }
 
   function splitElement( element, times ) {
+    log( 'splitElement times', times );
     var result = [];
     //if there are only 2 times no need to split
     if( times.length < 3 ) {
@@ -249,6 +265,8 @@
       result.push( newElement );
     }
     
+    log( 'splitElement result', result );
+    
     return result;
   }
 
@@ -269,7 +287,11 @@
       }
     }
     
-    return result.sort(function(a,b){return a.start - b.start;});
+    var result = result.sort(function(a,b){return a.start - b.start;});
+    
+    log( 'splitData', result );
+    
+    return result;
   }
 
   function groupSplitData( split ) {
@@ -317,12 +339,37 @@
     
     return result;
   }
+  
+  //fucking js floating point errors accumulatings :(
+  function removeVeryShortNotes( song ) {
+    var decentNotes = [];
+    for( var i = 0; i < song.length; i++ ) {
+      if( song[ i ].dur < 0 ) {
+        throw {
+          name: 'NegativeDurationException',
+          message: 'There was a negative duration at index ' + i + ' of the song data'
+        };
+      }
+      if( Math.floor( song[ i ].dur ) > 0 ) {
+        decentNotes.push( song[ i ] );
+      }
+    }
+    return decentNotes;
+  }
 
-  exports.compile = function( expr ) {
+  exports.compile = function( expr, debug ) {
+    debugMode = debug;
+    
+    normalizeNotes( expr );
+    
     var data = groupData( expr ),
         split = splitData( data ),
         groupedSplit = groupSplitData( split ),
         song = splitDataToSong( groupedSplit );
+        
+    song = removeVeryShortNotes( song );
+    
+    log( 'compile', song );
 
     return song;
   };

@@ -1,0 +1,15 @@
+* 2 (
+  * 4 (
+    o 2
+    
+    e4 f+4 f+4 e-4 c4 e-4 e-4	r8 r12  
+  ),
+  (
+    o 4
+
+    e8 e8 f8 g8 g8 f8 e8 d8 c8 c8 d8 e8 e8 d12 d4
+    e8 e8 f8 g8 g8 f8 e8 d8 c8 c8 d8 e8 d8 c12 c4
+    d8 d8 e8 c8 d8 e12 f12 e8 c8 d8 e12 f12 e8 d8 c8 d8 r8
+    e8 e8 f8 g8 g8 f8 e8 d8 c8 c8 d8 e8 d8 c12 c4
+  )
+)

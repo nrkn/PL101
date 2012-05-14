@@ -1,0 +1,117 @@
+.CodeMirror {
+  background: #ddd !important;
+  line-height: 1em !important;
+  font-family: "Consolas", monospace  !important;
+  font-size: 120%;
+  text-shadow: none !important;
+}
+
+.CodeMirror-scroll {
+  overflow: auto !important;
+  height: 300px !important;
+  /* This is needed to prevent an IE[67] bug where the scrolled content
+     is visible outside of the scrolling box. */
+  position: relative !important;
+  outline: none !important;
+}
+
+.CodeMirror-gutter {
+  position: absolute !important; left: 0 !important; top: 0 !important;
+  z-index: 10 !important;
+  background-color: #f7f7f7 !important;
+  border-right: 1px solid #eee !important;
+  min-width: 2em !important;
+  height: 100% !important;
+}
+.CodeMirror-gutter-text {
+  color: #aaa !important;
+  text-align: right !important;
+  padding: .4em .2em .4em .4em !important;
+  white-space: pre !important;
+}
+.CodeMirror-lines {
+  padding: .4em !important;
+  white-space: pre !important;
+}
+
+.CodeMirror pre {
+  -moz-border-radius: 0 !important;
+  -webkit-border-radius: 0 !important;
+  -o-border-radius: 0 !important;
+  border-radius: 0 !important;
+  border-width: 0 !important; margin: 0 !important; padding: 0 !important; background: transparent !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  padding: 0 !important; margin: 0 !important;
+  white-space: pre !important;
+  word-wrap: normal !important;
+  line-height: inherit !important;
+}
+
+.CodeMirror-wrap pre {
+  word-wrap: break-word !important;
+  white-space: pre-wrap !important;
+  word-break: normal !important;
+}
+.CodeMirror-wrap .CodeMirror-scroll {
+  overflow-x: hidden !important;
+}
+
+.CodeMirror textarea {
+  outline: none !important;
+}
+
+.CodeMirror pre.CodeMirror-cursor {
+  z-index: 10 !important;
+  position: absolute !important;
+  visibility: hidden !important;
+  border-left: 1px solid black !important;
+  border-right:none !important;
+  width:0 !important;
+}
+.CodeMirror pre.CodeMirror-cursor.CodeMirror-overwrite {}
+.CodeMirror-focused pre.CodeMirror-cursor {
+  visibility: visible !important;
+}
+
+div.CodeMirror-selected { background: #d9d9d9 !important; }
+.CodeMirror-focused div.CodeMirror-selected { background: #d7d4f0 !important; }
+
+.CodeMirror-searching {
+  background: #ffa !important;
+  background: rgba(255, 255, 0, .4) !important;
+}
+
+/* Default theme */
+
+.cm-s-default span.cm-keyword {color: #708 !important;}
+.cm-s-default span.cm-atom {color: #219 !important;}
+.cm-s-default span.cm-number {color: #164 !important;}
+.cm-s-default span.cm-def {color: #00f !important;}
+.cm-s-default span.cm-variable {color: black !important;}
+.cm-s-default span.cm-variable-2 {color: #05a !important;}
+.cm-s-default span.cm-variable-3 {color: #085 !important;}
+.cm-s-default span.cm-property {color: black !important;}
+.cm-s-default span.cm-operator {color: black !important;}
+.cm-s-default span.cm-comment {color: #a50 !important;}
+.cm-s-default span.cm-string {color: #a11 !important;}
+.cm-s-default span.cm-string-2 {color: #f50 !important;}
+.cm-s-default span.cm-meta {color: #555 !important;}
+.cm-s-default span.cm-error {color: #f00 !important;}
+.cm-s-default span.cm-qualifier {color: #555 !important;}
+.cm-s-default span.cm-builtin {color: #30a !important;}
+.cm-s-default span.cm-bracket {color: #cc7 !important;}
+.cm-s-default span.cm-tag {color: #170 !important;}
+.cm-s-default span.cm-attribute {color: #00c !important;}
+.cm-s-default span.cm-header {color: #a0a !important;}
+.cm-s-default span.cm-quote {color: #090 !important;}
+.cm-s-default span.cm-hr {color: #999 !important;}
+.cm-s-default span.cm-link {color: #00c !important;}
+
+span.cm-header, span.cm-strong {font-weight: bold !important;}
+span.cm-em {font-style: italic !important;}
+span.cm-emstrong {font-style: italic !important; font-weight: bold !important;}
+span.cm-link {text-decoration: underline !important;}
+
+div.CodeMirror span.CodeMirror-matchingbracket {color: #0f0 !important;}
+div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22 !important;}

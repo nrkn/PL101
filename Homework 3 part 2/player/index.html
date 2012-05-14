@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Note Player</title>
+    <script src="http://code.jquery.com/jquery-1.7.2.min.js"></script>
+    <script src="audiolib.min.js"></script>
+    <script src="musCompiler.js"></script>    
+    <script src="noteCompiler.js"></script>    
+    <script src="songCompiler.js"></script>
+    <script src="compile.js"></script>
+    <script src="player.js"></script>    
+    <script>
+      $(document).ready(function(){
+        $( '#play' ).attr( 'disabled', false );
+        
+        $( '#play' ).click(function(){
+          $( this ).attr( 'disabled', true );
+          $( 'body' ).append( "<p>Embarrasingly, I don't know how to reset audiolib after it's played once, so you have to reload the page to use it again</p>" );
+          play( $( 'textarea' ).val(), $('input:radio[name=inFormat]:checked').val() );
+        });
+      });
+    </script>
+    <link rel="stylesheet" href="player.css" />
+  </head>
+  <body>
+    <h1>nrkn .musick/.mus/.note/.song player</h1>
+    <div>
+      <button id="play">Play</button>
+      <label for="musick">.musick</label><input type="radio" id="musick" value=".musick" name="inFormat" checked />
+      <label for="mus">.mus</label><input type="radio" id="mus" value=".mus" name="inFormat" />
+      <label for="note">.note</label><input type="radio" id="note" value=".note" name="inFormat" />
+      <label for="song">.song</label><input type="radio" id="song" value=".song" name="inFormat" />
+    </div>
+    <textarea id="note">* 2 (                                                         
+  * 4 (                                                       
+    o 2
+    
+    e4 f+4 f+4 e-4 c4 e-4 e-4 c8 r12
+  ),  
+  (                                                           
+    o 4
+
+    e8 e8 f8 g8 g8 f8 e8 d8 c8 c8 d8 e8 e8 d12 d4
+    e8 e8 f8 g8 g8 f8 e8 d8 c8 c8 d8 e8 d8 c12 c4
+    d8 d8 e8 c8 d8 e12 f12 e8 c8 d8 e12 f12 e8 d8 c8 d8 r8
+    e8 e8 f8 g8 g8 f8 e8 d8 c8 c8 d8 e8 d8 c12 c4
+  )
+)</textarea>
+  </body>
+</html>

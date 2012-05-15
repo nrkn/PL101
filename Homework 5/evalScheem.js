@@ -125,16 +125,18 @@ var evalScheem, evalScheemString, lookup;
           func: function( expr, env ) {
                   checkArgs( 'define', expr, 2 );            
 
-                  addBinding( env, expr[ 1 ], evalScheem( expr[ 2 ], env ) ); 
-                  return 0;
+                  var value = evalScheem( expr[ 2 ], env );
+                  addBinding( env, expr[ 1 ], value ); 
+                  return value;
                 }         
         },        
         'set!': {
           func: function( expr, env ) {
                   checkArgs( 'set!', expr, 2 );                        
                              
-                  update( env, expr[ 1 ], evalScheem( expr[ 2 ], env ) ); 
-                  return 0;
+                  var value = evalScheem( expr[ 2 ], env );
+                  update( env, expr[ 1 ], value ); 
+                  return value;
                 }         
         },        
         'begin': {
@@ -145,6 +147,7 @@ var evalScheem, evalScheemString, lookup;
                   for( var i = 1; i < expr.length; i++ ) {
                     result = evalScheem( expr[ i ], env );
                   }
+                  
                   return result;
                 }         
         },          
@@ -159,11 +162,14 @@ var evalScheem, evalScheemString, lookup;
           func: function( expr, env ) {
                   checkArgs( 'if', expr, 3 );            
                   checkTypes( 'if', [ expr[ 1 ] ], env, boolChecker );
+                  
                   return evalScheem( expr[ 1 ], env ) === _true ? evalScheem( expr[ 2 ], env ) : evalScheem( expr[ 3 ], env ); 
                 } 
         },                
         'lambda': {
           func: function( expr, env ) {
+                  checkArgs( 'lambda', expr, 2, checkArgsMode.atLeast ); 
+                  
                   return function( args, dynamicEnv ) {
                     var bindings = {};
                     for( var i = 0; i < expr[ 1 ].length; i++ ) {
@@ -179,7 +185,7 @@ var evalScheem, evalScheemString, lookup;
         },
         'alert': {
           func: function( expr, env ) {
-                  checkArgs( alert, expr, 1 );
+                  checkArgs( 'alert', expr, 1 );
                   var message = evalScheem( expr[ 1 ], env );
                   if( window && window.alert ) {
                     window.alert( message );
@@ -187,6 +193,13 @@ var evalScheem, evalScheemString, lookup;
                     console.log( message );
                   }
                   return 0;
+                }
+        },
+        'len': {
+          func: function( expr, env ) {
+                  checkArgs( 'len', expr, 1 );
+                  checkTypes( 'len', expr, env, arrayChecker );   
+                  return evalScheem( expr[ 1 ], env ).length;
                 }
         }
       };
@@ -260,7 +273,7 @@ var evalScheem, evalScheemString, lookup;
         }   
         break;
     }
-  };
+  }
     
   function typeChecker( expr, env, expected ) {
     return {
@@ -310,7 +323,7 @@ var evalScheem, evalScheemString, lookup;
         builtIn.handler( key, expr, env, builtIn ) :
         builtIn.func( expr, env );
     };
-  };
+  }
       
   function initBindings( env ) {
     if( env === undefined ) {
@@ -364,7 +377,7 @@ var evalScheem, evalScheemString, lookup;
       return;
     }
     update( env.outer, v, val );
-  };
+  }
 
   function addBinding(env, v, val) {            
     if( builtIns[ v ] !== undefined ) {
@@ -375,7 +388,7 @@ var evalScheem, evalScheemString, lookup;
       throw new VariableAlreadyDefinedExpection( v );
     }      
     env.bindings[ v ] = val;
-  };
+  }
 
   lookup = function( env, v ) {
     if( env === undefined ) {
@@ -386,7 +399,7 @@ var evalScheem, evalScheemString, lookup;
     }
     
     return lookup( env.outer, v );
-  };  
+  };
   
   evalScheem = function( expr, env ) {
     initBindings( env );
@@ -401,7 +414,7 @@ var evalScheem, evalScheemString, lookup;
 
     var func = evalScheem( expr[ 0 ], env );
     return func( expr.slice( 1 ), env );
-  }
+  };
 
   /*global SCHEEM:false */
   evalScheemString = function( expr, env ) {

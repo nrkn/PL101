@@ -939,7 +939,7 @@ suite('lambda', function() {
           [ 'lambda', [ 'a', 'b' ], [ 
             'begin',
             [ 'define', 'c', [ '+', 'a', 1 ] ],
-            [ 'define', 'd', [ 'lambda', [ 'e' ], [ '+', 'c', 'e' ] ] ],
+            [ 'define', 'd', [ 'lambda', [ 'f' ], [ '+', 'c', 'f' ] ] ],
             [ 'd', 'b' ]
           ] ],
           3, 2
@@ -957,7 +957,7 @@ suite('lambda', function() {
               [ [ 'lambda', [ 'a', 'b' ], [ 
                 'begin',
                 [ 'define', 'c', [ '+', 'a', 1 ] ],
-                [ 'define', 'd', [ 'lambda', [ 'e' ], [ '+', 'c', 'e' ] ] ],
+                [ 'define', 'd', [ 'lambda', [ 'g' ], [ '+', 'c', 'g' ] ] ],
                 [ 'd', 'b' ]
               ] ],
               3, 2 ] 
@@ -987,7 +987,7 @@ suite('lambda', function() {
           [ [ 'lambda', [ 'a', 'b' ], [ 
             'begin',
             [ 'define', 'c', [ '+', 'a', 1 ] ],
-            [ 'define', 'd', [ 'lambda', [ 'e' ], [ 'set!', 'c', [ '+', 'c', 'e' ] ] ] ],
+            [ 'define', 'd', [ 'lambda', [ 'f' ], [ 'set!', 'c', [ '+', 'c', 'f' ] ] ] ],
             [ 'd', 'b' ],
             'c'
           ] ],
@@ -1026,12 +1026,12 @@ suite('lambda', function() {
           'begin', [ 
             'define', 'a', [ 
               'begin', [            
-                 'define', 'e', 2                 
+                 'define', 'f', 2                 
                ],
                [
                 'lambda', [ 'b' ], [
                   'lambda', [ 'c' ], [ 
-                    '+', 'b', 'c', 'e' 
+                    '+', 'b', 'c', 'f' 
                   ]
                 ]
               ]
@@ -1071,6 +1071,7 @@ suite('lambda', function() {
 
 /*todo: 
     len
+    reverse
 */
   </script>
   <script>

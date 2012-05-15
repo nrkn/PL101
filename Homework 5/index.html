@@ -51,15 +51,7 @@
           historyCount = 0,          
           envToTable = function( env ) {
             var table = '<table>';
-            
-            //haxx
-            /*
-            for( var key in env ) {
-              if( env.hasOwnProperty( key ) ) {
-                table += '<tr><th class="ui-bar-b">' + key + '</th><td class="ui-body-b"><pre>' + JSON.stringify( env[ key ] ) + '</pre></td></tr>';
-              }
-            }
-            */
+
             table += '<tr><th class="ui-bar-b">env</th><td class="ui-body-b"><pre>' + JSON.stringify( env, null, 2 ) + '</pre></td></tr>';
             
             table += '</table>';

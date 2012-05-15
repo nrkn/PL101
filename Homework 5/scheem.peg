@@ -6,11 +6,23 @@ validchar =
     [0-9a-zA-Z_?!+\-=@#$%^&*/.<>|]
 
 atom =
-    numbers: [0-9]+
-        { return Number( numbers.join( '' ) ); }
+    decimal
+  / integer
   / chars: validchar+
-        { return chars.join( '' ); }
+        { return chars.join( '' ); }     
 
+integer =
+    digits: [0-9]+
+        { return Number( digits.join( '' ) ); }
+
+decimal =
+    sign: [+-]? number: integer [.] decimals: integer
+        { return Number( number + '.' + decimals ) * ( sign === '-' ? -1 : 1 ); }
+  / sign: [+-]? [.] decimals: integer
+        { return Number( '0.' + decimals ) * ( sign === '-' ? -1 : 1 ); }    
+  / sign: [+-]? number: integer
+        { return number * ( sign === '-' ? -1 : 1 ); }
+         
 whitespace =
     [ \t\r\n]
  

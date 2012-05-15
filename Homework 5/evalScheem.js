@@ -201,6 +201,23 @@ var evalScheem, evalScheemString, lookup;
                   checkTypes( 'len', expr, env, arrayChecker );   
                   return evalScheem( expr[ 1 ], env ).length;
                 }
+        },
+        'reverse': {
+          func: function( expr, env ) {
+                  checkArgs( 'len', expr, 1 );
+                  checkTypes( 'len', expr, env, arrayChecker );  
+                  
+                  var values = Array.apply( null, evalScheem( expr[ 1 ], env ) );
+
+                  return values.reverse();
+                }
+        },
+        'contains': {
+          func: function( expr, env ) {        
+                  checkArgs( 'len', expr, 2 );
+                  checkTypes( 'len', [ expr[ 1 ] ], env, arrayChecker );   
+                  return evalScheem( expr[ 1 ], env ).indexOf( evalScheem( expr[ 2 ], env ) ) !== -1 ? _true : _false;
+                }
         }
       };
 
@@ -282,6 +299,26 @@ var evalScheem, evalScheemString, lookup;
     };
   }
 
+  function numberChecker( expr, env ) {
+    return typeChecker( expr, env, 'number' );
+  }
+
+  function arrayChecker( expr, env ) {
+    var result = evalScheem( expr, env );
+    return {
+      expected: 'array',
+      actual: result.length ? 'array' : typeof result
+    };
+  }
+
+  function boolChecker( expr, env ) {
+    var result = evalScheem( expr, env );
+    return {
+      expected: 'boolean',
+      actual: result === _true || result === _false ? 'boolean' : typeof result
+    };  
+  }  
+
   function checkTypes( name, expr, env, typeChecker ) {
     for( var i = 1; i < expr.length; i++ ) {
       var check = typeChecker( expr[ i ], env );
@@ -289,7 +326,7 @@ var evalScheem, evalScheemString, lookup;
         throw new InvalidTypeException( name, check.expected, check.actual );
       }
     }
-  }
+  }  
     
   function variadic( name, expr, env, checker, func ) {
     checkArgs( name, expr, 2, checkArgsMode.atLeast );
@@ -324,6 +361,50 @@ var evalScheem, evalScheemString, lookup;
         builtIn.func( expr, env );
     };
   }
+  
+  function bindMember( bindings, obj, key ) {
+    var v = key.toLowerCase();
+    
+    if( builtIns[ v ] !== undefined ) {
+      throw new CannotOverrideBuiltInException( v );
+    }    
+    
+    var member = obj[ key ];
+    
+    if( member === undefined ) return;
+
+    var memberType = typeof member;    
+
+    
+    //only handle properties that are numbers or arrays or bools for now
+    if( member instanceof Array || memberType === 'number' || memberType === 'boolean' ) {
+      bindings[ v ] = member;
+    } else if( memberType === 'function' ) {
+      bindings[ v ] = function( args, env ) {        
+        var values = args.map( function( e ) {
+          return evalScheem( e, env );
+        });
+        
+        return  obj[ key ].apply( obj, ( values.length === 1 && values[ 0 ] instanceof Array ) ? values[ 0 ] : values );
+      }
+    }  
+  }
+  
+  function addJsObject( bindings, obj, members ) {
+    if( members !== undefined && members instanceof Array ) {
+      for( var i = 0; i < members.length; i++ ) {
+        var key = members[ i ];
+        bindMember( bindings, obj, key );
+      }
+      return;
+    }    
+    
+    for( var key in obj ) {
+      if( obj.hasOwnProperty( key ) ) {
+        bindMember( bindings, obj, key );
+      }
+    }
+  }
       
   function initBindings( env ) {
     if( env === undefined ) {
@@ -341,26 +422,12 @@ var evalScheem, evalScheemString, lookup;
         }
       }
     }
-  }
-
-  function numberChecker( expr, env ) {
-    return typeChecker( expr, env, 'number' );
-  }
-
-  function arrayChecker( expr, env ) {
-    var result = evalScheem( expr, env );
-    return {
-      expected: 'array',
-      actual: result.length ? 'array' : typeof eval
-    };
-  }
-
-  function boolChecker( expr, env ) {
-    var result = evalScheem( expr, env );
-    return {
-      expected: 'boolean',
-      actual: result === _true || result === _false ? 'boolean' : typeof result
-    };  
+    
+    addJsObject( env.bindings, Math, [
+      'E', 'LN2', 'LN10', 'LOG2E', 'LOG10E', 'PI', 'SQRT1_2', 'SQRT2', 'abs', 'acos', 'asin', 'atan',
+      'atan2', 'ceil', 'cos', 'exp', 'floor', 'log', 'max', 'min', 'pow', 'random', 'round', 'sin', 
+      'sqrt', 'tan'
+    ]);
   }
 
   function update(env, v, val) {

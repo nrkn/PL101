@@ -628,6 +628,11 @@ suite('define', function() {
       expect(function () {
           evalScheem(['define', 'a', 2 ], env);
       }).to.throw();
+    });   
+    test('override builtin', function() {
+      expect(function () {
+          evalScheem(['define', 'if', 2 ], {});
+      }).to.throw();
     });    
 });
 suite('set', function() {    
@@ -665,6 +670,11 @@ suite('set', function() {
     test('undefined variable', function() {
       expect(function () {
           evalScheem(['set!', 'd', 2 ], {});
+      }).to.throw();
+    });
+    test('override builtin', function() {
+      expect(function () {
+          evalScheem(['set!', 'if', 2 ], {});
       }).to.throw();
     });
 });
@@ -822,6 +832,20 @@ suite('if', function() {
       }).to.throw();
     });     
 });
+suite( 'let', function() {
+    test('simple let', function() {        
+        assert.deepEqual(
+            evalScheem( [ 'let', [ [ 'x', 2 ], [ 'y',  3 ] ], [ '*', 'x', 'y' ] ], {}),
+            6
+        );
+    });
+    test('nested let', function() {        
+        assert.deepEqual(
+            evalScheemString('(let ((x 2) (y 3)) (let ((x 7) (z (+ x y))) (* z x)))', {}),
+            35
+        );
+    });
+});
 suite( 'variables', function(){
   test('add two variables', function() {
     assert.deepEqual(        
@@ -879,15 +903,6 @@ suite('parse', function() {
             [ 1, [ [ 'quote', 2 ], 3, 4, [ 'quote', 5 ], 6, 7 ], [ 'quote', [ 4, 5 ] ], 6 ]
         );
     });      
-});
-//lamda one is really boring. this is enough of a test
-suite('lambda one', function() {
-  test('plusone', function() {
-    assert.deepEqual(        
-        evalScheem(['begin', [ 'define', 'plusone', [ 'lambda-one', 'x', [ '+', 'x', 1 ] ] ], [ 'plusone', 7 ]  ], {}),
-        8
-    );    
-  });  
 });
 suite('lambda', function() {
   test('plusone', function() {
@@ -984,29 +999,73 @@ suite('lambda', function() {
   test('outer function returns inner function', function() {
     assert.deepEqual(        
         evalScheem([ 
-          'begin',
-          [ 
-            'define',
-            'a',
-            [ 
-              'lambda',
-              [ 'b' ],
-              [
-                'lambda',
-                [ 'c' ],
-                [ '+', 'b', 'c' ]
+          'begin', [ 
+            'define', 'a', [ 
+              'lambda', [ 'b' ], [
+                'lambda', [ 'c' ], [ 
+                  '+', 'b', 'c' 
+                ]
               ]
             ]
           ],
           [ 
-            'define',
-            'd',
-            [ 'a', 5 ]
+            'define', 'd', [ 
+              'a', 5 
+            ]
           ],
-          [ 'd', 3 ]  
+          [ 
+            'd', 3 
+          ]  
         ], {}),
         8
     ); 
+  });     
+  test('outer function returns inner function referencing outer variable', function() {
+      assert.deepEqual(        
+        evalScheem([ 
+          'begin', [ 
+            'define', 'a', [ 
+              'begin', [            
+                 'define', 'e', 2                 
+               ],
+               [
+                'lambda', [ 'b' ], [
+                  'lambda', [ 'c' ], [ 
+                    '+', 'b', 'c', 'e' 
+                  ]
+                ]
+              ]
+            ]
+          ],
+          [ 
+            'define', 'd', [ 
+              'a', 5 
+            ]
+          ],
+          [ 
+            'd', 3 
+          ]  
+        ], {}),
+        10
+    );  
+  });
+  test('recursive', function(){
+      assert.deepEqual(        
+        evalScheem([
+          'begin', [ 
+            'define', 'fib', [
+              'lambda', [ 'n' ], [
+                'if', [ '<' , 'n', 2 ],
+                  'n',
+                  [ '+', [ 'fib', [ '-', 'n' , 1 ] ], [ 'fib', [ '-', 'n', 2 ] ] ] 
+              ]
+            ]
+          ], [
+            'fib', 9 
+          ]
+        ], {}),  
+        34
+      );  
   });   
 });
   </script>
@@ -1020,6 +1079,6 @@ suite('lambda', function() {
   </script>
 </head>
 <body>
-  <div id="mocha"></div>  
+  <div id="mocha"></div>    
 </body>
 </html>

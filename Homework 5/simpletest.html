@@ -1066,9 +1066,97 @@ suite('lambda', function() {
         ], {}),  
         34
       );  
-  }); 
+  });   
 });
-
+suite('hash', function() {
+  test('create empty', function() {
+    assert.deepEqual(        
+        evalScheem(['hash'], {}),
+        {}
+    );    
+  });  
+  test('create empty then update', function() {
+    assert.deepEqual(        
+        evalScheem([
+          'begin',
+          [ 'define', 'a', [ 'hash' ] ],
+          [ 'update', 'a', [ 'b', 13 ] ],
+          [ 'lookup', 'a', 'b' ]          
+        ], {}),
+        13
+    );    
+  });  
+  test('create with args then lookup', function() {
+    assert.deepEqual(        
+        evalScheem([
+          'begin',
+          [ 'define', 'a', [ 'hash', [ 'b', 13 ] ] ],
+          [ 'lookup', 'a', 'b' ]          
+        ], {}),
+        13
+    );    
+  });  
+  test('create with multiple args then lookup', function() {
+    assert.deepEqual(        
+        evalScheem([
+          'begin',
+          [ 'define', 'a', [ 'hash', [ 'a', 12 ], [ 'b', 13 ] ] ],
+          [ '+', [ 'lookup', 'a', 'a' ], [ 'lookup', 'a', 'b' ] ]          
+        ], {}),
+        25
+    );    
+  });
+  test('create with multiple args then check if contains passes', function() {
+    assert.deepEqual(        
+        evalScheem([
+          'begin',
+          [ 'define', 'a', [ 'hash', [ 'a', 12 ], [ 'b', 13 ] ] ],
+          [ 'contains', 'a', 'b' ]          
+        ], {}),
+        '#t'
+    );    
+  });    
+  test('create with multiple args then check if contains fails', function() {
+    assert.deepEqual(        
+        evalScheem([
+          'begin',
+          [ 'define', 'a', [ 'hash', [ 'a', 12 ], [ 'b', 13 ] ] ],
+          [ 'contains', 'a', 'c' ]          
+        ], {}),
+        '#f'
+    );    
+  });    
+  test('get hash keys', function() {
+    assert.deepEqual(        
+        evalScheem([
+          'begin',
+          [ 'define', 'a', [ 'hash', [ 'a', 12 ], [ 'b', 13 ], [ 'c', 21 ] ] ],
+          [ 'keys', 'a' ]          
+        ], {}),
+        [ 'a', 'b', 'c' ]
+    );    
+  });    
+  test('get hash values', function() {
+    assert.deepEqual(        
+        evalScheem([
+          'begin',
+          [ 'define', 'a', [ 'hash', [ 'a', 12 ], [ 'b', 13 ], [ 'c', 21 ] ] ],
+          [ 'values', 'a' ]               
+        ], {}),
+        [ 12, 13, 21 ]
+    );    
+  });   
+  test('get hash length', function() {
+    assert.deepEqual(        
+        evalScheem([
+          'begin',
+          [ 'define', 'a', [ 'hash', [ 'a', 12 ], [ 'b', 13 ], [ 'c', 21 ] ] ],
+          [ 'len', 'a' ]
+        ], {}),
+        3
+    );    
+  });   
+});  
 /*todo: 
     len
     reverse

@@ -184,6 +184,75 @@ var evalScheem, evalScheemString, lookup;
                   };  
                 } 
         },
+        'hash': {
+          func: function( expr, env ) {
+                  var hash = {};
+                  
+                  if( expr.length > 1 ) {
+                    for( var i = 1; i < expr.length; i++ ) {
+                      var keyValuePair = expr[ i ];
+                      checkArgCount( 'hash keyValuePair', keyValuePair.length, 2 );        
+                      var key = keyValuePair[ 0 ],
+                          value = evalScheem( keyValuePair[ 1 ], env );
+                      hash[ key ] = value;
+                    }
+                  }                  
+                  
+                  return hash;
+                }
+        },
+        'lookup': {
+          func: function( expr, env ) {
+                  checkArgCount( 'hash lookup', expr.length - 1, 2 );       
+                  
+                  var hash = evalScheem( expr[ 1 ], env );                  
+                  return hash[ expr[ 2 ] ];
+                }
+        },
+        'update': {
+          func: function( expr, env ) {
+                  checkArgCount( 'hash update', expr.length - 1, 2 );       
+                  var hash = evalScheem( expr[ 1 ], env ),
+                      keyValuePair = expr[ 2 ];
+                  checkArgCount( 'hash keyValuePair', keyValuePair.length, 2 );        
+                  var key = keyValuePair[ 0 ],
+                      value = evalScheem( keyValuePair[ 1 ], env );
+                      
+                  hash[ key ] = value;
+                  
+                  return hash;
+                }      
+        },
+        'keys': {
+          func: function( expr, env ) {
+                  checkArgCount( 'hash keys', expr.length - 1, 1 );       
+                  var hash = evalScheem( expr[ 1 ], env ),
+                      keys = [];
+                      
+                  for( var key in hash ) {
+                    if( hash.hasOwnProperty( key ) ) {
+                      keys.push( key );
+                    }
+                  }
+                  
+                  return keys;
+                }
+        },        
+        'values': {
+          func: function( expr, env ) {
+                  checkArgCount( 'hash keys', expr.length - 1, 1 );       
+                  var hash = evalScheem( expr[ 1 ], env ),
+                      values = [];
+                      
+                  for( var key in hash ) {
+                    if( hash.hasOwnProperty( key ) ) {
+                      values.push( hash[ key ] );
+                    }
+                  }
+                  
+                  return values;
+                }
+        },
         'alert': {
           func: function( expr, env ) {
                   var args = evalArgs( expr.slice( 1 ), env );
@@ -200,11 +269,21 @@ var evalScheem, evalScheemString, lookup;
         },
         'len': {
           func: function( expr, env ) {
-                  var args = evalArgs( expr.slice( 1 ), env );                  
-                  checkArgCount( 'len', args.length, 1 );
-                  checkExpectedTypes( 'len', args, expectArray );   
+                  checkArgCount( 'len', expr.length - 1, 1 );
+                  var item = evalScheem( expr[ 1 ], env );
+                  //array
+                  if( item instanceof Array ) {
+                    return item.length;
+                  }
                   
-                  return args[ 0 ].length;
+                  //hash
+                  var count = 0;
+                  for( var key in item ) {
+                    if( item.hasOwnProperty( key ) ) {
+                      count++;
+                    }
+                  }
+                  return count;
                 }
         },
         'reverse': {
@@ -221,11 +300,15 @@ var evalScheem, evalScheemString, lookup;
         },
         'contains': {
           func: function( expr, env ) {        
-                  var args = evalArgs( expr.slice( 1 ), env ); 
-                  checkArgCount( 'contains', args.length, 2 );
-                  checkExpectedTypes( 'contains', [ args[ 0 ] ], expectArray );   
+                  checkArgCount( 'contains', expr.length - 1, 2 );
+                  var item = evalScheem( expr[ 1 ], env );
+                  //array contains key
+                  if( item instanceof Array ) {
+                    return item.indexOf( evalScheem( expr[ 2 ], env ) ) !== -1 ? _true : _false;
+                  }
                   
-                  return args[ 0 ].indexOf( args[ 1 ] ) !== -1 ? _true : _false;
+                  //hash contains key
+                  return item[ expr[ 2 ] ] !== undefined ? _true : _false;
                 }
         }
       };
@@ -329,7 +412,7 @@ var evalScheem, evalScheemString, lookup;
       actual: arg === _true || arg === _false ? 'boolean' : typeof arg
     };  
   }  
-
+  
   function checkExpectedTypes( name, args, typeCheckerFunc ) {
     for( var i = 0; i < args.length; i++ ) {
       var check = typeCheckerFunc( args[ i ] );

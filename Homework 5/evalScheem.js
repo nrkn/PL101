@@ -12,10 +12,10 @@ var evalScheem, evalScheemString, lookup;
      
       handlers = {
         numericVariadic:  function( name, expr, env, builtIn ) {
-                            return variadic( name, expr, env, numberChecker, builtIn.func );                       
+                            return variadic( name, expr, env, expectNumber, builtIn.func );                       
                           },
         booleanVariadic:  function( name, expr, env, builtIn ) {
-                            return booleanVariadic( name, expr, env, builtIn.checker || numberChecker, builtIn.func, builtIn.invert ) ? 
+                            return booleanVariadic( name, expr, env, builtIn.checker || expectNumber, builtIn.func, builtIn.invert ) ? 
                               ( builtIn.returns && builtIn.returns[ 'true' ] ) || _true : 
                               ( builtIn.returns && builtIn.returns[ 'false' ] ) || _false;
                           }
@@ -73,39 +73,43 @@ var evalScheem, evalScheemString, lookup;
         '&&': {
           handler: handlers.booleanVariadic,
           func: function( a, b ) { return a === _true && b === _true; },
-          checker: boolChecker
+          checker: expectBool
         },
         '||': {
           handler: handlers.booleanVariadic,
           func: function( a, b ) { return a === _true || b === _true; },
-          checker: boolChecker,
+          checker: expectBool,
           invert: true
         },
         'cons': {
           func: function( expr, env ) {
-                  checkArgs( 'cons', expr, 2 );                    
-                  return [ evalScheem( expr[ 1 ], env ) ].concat( evalScheem( expr[ 2 ], env ));          
+                  var args = evalArgs( expr.slice( 1 ), env );
+                  checkArgCount( 'cons', args.length, 2 );
+                   
+                  return [ args[ 0 ] ].concat( args[ 1 ] );          
                 }
         },
         'car': {
           func: function( expr, env ) {
-                  checkArgs( 'car', expr, 1 );            
-                  checkTypes( 'car', expr, env, arrayChecker );
+                  var args = evalArgs( expr.slice( 1 ), env );
+                  checkArgCount( 'car', args.length, 1 );
+                  checkExpectedTypes( 'car', args, expectArray ); 
               
-                  return evalScheem( expr[ 1 ], env )[ 0 ];
+                  return args[ 0 ][ 0 ];
                 }
         },
         'cdr': {
           func: function( expr, env ) {
-                  checkArgs( 'cdr', expr, 1 );            
-                  checkTypes( 'cdr', expr, env, arrayChecker );
+                  var args = evalArgs( expr.slice( 1 ), env );
+                  checkArgCount( 'cdr', args.length, 1 );
+                  checkExpectedTypes( 'cdr', args, expectArray ); 
                   
-                  return evalScheem( expr[ 1 ], env ).slice( 1 );      
+                  return args[ 0 ].slice( 1 );      
                 }
         },
         'let': {
           func: function( expr, env ) {
-                  checkArgs( 'let', expr, 2 );     
+                  checkArgCount( 'let', expr.length - 1, 2 );
                   
                   var bindings = {};
                   
@@ -123,52 +127,49 @@ var evalScheem, evalScheemString, lookup;
         },
         'define': {
           func: function( expr, env ) {
-                  checkArgs( 'define', expr, 2 );            
+                  checkArgCount( 'define', expr.length - 1, 2 );
 
                   var value = evalScheem( expr[ 2 ], env );
-                  addBinding( env, expr[ 1 ], value ); 
+                  addBinding( expr[ 1 ], value, env ); 
                   return value;
                 }         
         },        
         'set!': {
           func: function( expr, env ) {
-                  checkArgs( 'set!', expr, 2 );                        
+                  checkArgCount( 'set!', expr.length - 1, 2 );                   
                              
                   var value = evalScheem( expr[ 2 ], env );
-                  update( env, expr[ 1 ], value ); 
+                  update( expr[ 1 ], value, env ); 
                   return value;
                 }         
         },        
         'begin': {
           func: function( expr, env ) {
-                  checkArgs( 'begin', expr, 1, checkArgsMode.atLeast );     
-              
-                  var result;
-                  for( var i = 1; i < expr.length; i++ ) {
-                    result = evalScheem( expr[ i ], env );
-                  }
+                  var args = evalArgs( expr.slice( 1 ), env );
+                  checkArgCount( 'begin!', args.length, 1, checkArgsMode.atLeast ); 
                   
-                  return result;
+                  return args[ args.length - 1 ];
                 }         
         },          
         'quote': {
           func: function( expr, env ) {
-                  checkArgs( 'quote', expr, 1 );
+                  checkArgCount( 'quote', expr.length - 1, 1 );
                   
                   return expr[ 1 ];  
                 }
         },                
         'if': {
           func: function( expr, env ) {
-                  checkArgs( 'if', expr, 3 );            
-                  checkTypes( 'if', [ expr[ 1 ] ], env, boolChecker );
+                  checkArgCount( 'if', expr.length - 1, 3 );                              
+                  var result = evalScheem( expr[ 1 ], env );
+                  checkExpectedTypes( 'if', [ result ], expectBool );
                   
-                  return evalScheem( expr[ 1 ], env ) === _true ? evalScheem( expr[ 2 ], env ) : evalScheem( expr[ 3 ], env ); 
+                  return result === _true ? evalScheem( expr[ 2 ], env ) : evalScheem( expr[ 3 ], env );
                 } 
         },                
         'lambda': {
           func: function( expr, env ) {
-                  checkArgs( 'lambda', expr, 2, checkArgsMode.atLeast ); 
+                  checkArgCount( 'lambda', expr.length - 1, 2, checkArgsMode.atLeast ); 
                   
                   return function( args, dynamicEnv ) {
                     var bindings = {};
@@ -185,38 +186,46 @@ var evalScheem, evalScheemString, lookup;
         },
         'alert': {
           func: function( expr, env ) {
-                  checkArgs( 'alert', expr, 1 );
-                  var message = evalScheem( expr[ 1 ], env );
+                  var args = evalArgs( expr.slice( 1 ), env );
+                  checkArgCount( 'alert', args.length, 1 );
+                  
                   if( window && window.alert ) {
-                    window.alert( message );
+                    window.alert( args[ 0 ] );
                   } else if( console && console.log ) {
-                    console.log( message );
+                    console.log( args[ 0 ] );
                   }
-                  return 0;
+                  
+                  return args[ 0 ];
                 }
         },
         'len': {
           func: function( expr, env ) {
-                  checkArgs( 'len', expr, 1 );
-                  checkTypes( 'len', expr, env, arrayChecker );   
-                  return evalScheem( expr[ 1 ], env ).length;
+                  var args = evalArgs( expr.slice( 1 ), env );                  
+                  checkArgCount( 'len', args.length, 1 );
+                  checkExpectedTypes( 'len', args, expectArray );   
+                  
+                  return args[ 0 ].length;
                 }
         },
         'reverse': {
           func: function( expr, env ) {
-                  checkArgs( 'len', expr, 1 );
-                  checkTypes( 'len', expr, env, arrayChecker );  
+                  var args = evalArgs( expr.slice( 1 ), env ); 
+                  checkArgCount( 'reverse', args.length, 1 );
+                  checkExpectedTypes( 'reverse', args, expectArray );   
                   
-                  var values = Array.apply( null, evalScheem( expr[ 1 ], env ) );
+                  //clone array
+                  var values = Array.apply( null, args[ 0 ] );
 
                   return values.reverse();
                 }
         },
         'contains': {
           func: function( expr, env ) {        
-                  checkArgs( 'len', expr, 2 );
-                  checkTypes( 'len', [ expr[ 1 ] ], env, arrayChecker );   
-                  return evalScheem( expr[ 1 ], env ).indexOf( evalScheem( expr[ 2 ], env ) ) !== -1 ? _true : _false;
+                  var args = evalArgs( expr.slice( 1 ), env ); 
+                  checkArgCount( 'contains', args.length, 2 );
+                  checkExpectedTypes( 'contains', [ args[ 0 ] ], expectArray );   
+                  
+                  return args[ 0 ].indexOf( args[ 1 ] ) !== -1 ? _true : _false;
                 }
         }
       };
@@ -269,82 +278,87 @@ var evalScheem, evalScheemString, lookup;
       message: 'Cannot override built-in function ' + name + '.'
     };
   }
-      
-  function checkArgs( name, expr, expects, mode ) {
-    if( mode === undefined ) {
-      mode = checkArgsMode.exact;    
-    }
+  
+  function evalArgs( args, env ) {
+    return args.map(function( e ) {
+      return evalScheem( e, env );
+    });
+  }
+     
+  function checkArgCount( name, length, expects, mode ) {
+    mode = mode || checkArgsMode.exact;    
     
     switch( mode ) {
       case 'exact':
-        if( expr.length - 1 < expects ) {
+        if( length < expects ) {
           throw new NotEnoughArgumentsException( name, expects );
         }
-        if( expr.length - 1 > expects ) {
+        if( length > expects ) {
           throw new TooManyArgumentsException( name, expects );
         }
         break;
       case 'atLeast':
-        if( expr.length - 1 < expects ) {
+        if( length < expects ) {
           throw new NotEnoughArgumentsException( name, expects );
         }   
         break;
     }
   }
-    
-  function typeChecker( expr, env, expected ) {
+      
+  function expectType( arg, expected ) {
     return {
       expected: expected,
-      actual: typeof evalScheem( expr, env )
+      actual: typeof arg
     };
   }
 
-  function numberChecker( expr, env ) {
-    return typeChecker( expr, env, 'number' );
+  function expectNumber( arg ) {
+    return expectType( arg, 'number' );
   }
-
-  function arrayChecker( expr, env ) {
-    var result = evalScheem( expr, env );
+  
+  function expectArray( arg ) {
     return {
       expected: 'array',
-      actual: result.length ? 'array' : typeof result
-    };
+      actual: arg instanceof Array ? 'array' : typeof arg
+    };    
   }
-
-  function boolChecker( expr, env ) {
-    var result = evalScheem( expr, env );
+  
+  function expectBool( arg ) {
     return {
       expected: 'boolean',
-      actual: result === _true || result === _false ? 'boolean' : typeof result
+      actual: arg === _true || arg === _false ? 'boolean' : typeof arg
     };  
   }  
 
-  function checkTypes( name, expr, env, typeChecker ) {
-    for( var i = 1; i < expr.length; i++ ) {
-      var check = typeChecker( expr[ i ], env );
+  function checkExpectedTypes( name, args, typeCheckerFunc ) {
+    for( var i = 0; i < args.length; i++ ) {
+      var check = typeCheckerFunc( args[ i ] );
       if( check.expected !== check.actual ) {
         throw new InvalidTypeException( name, check.expected, check.actual );
       }
     }
   }  
+  
+  function variadic( name, expr, env, checkerFunc, func ) {
+    var args = evalArgs( expr.slice( 1 ), env );
+    checkArgCount( name, args.length, 2, checkArgsMode.atLeast );    
+    checkExpectedTypes( name, args, checkerFunc ); 
     
-  function variadic( name, expr, env, checker, func ) {
-    checkArgs( name, expr, 2, checkArgsMode.atLeast );
-    checkTypes( name, expr, env, checker );
-    var result = evalScheem( expr[ 1 ], env );
-    for( var i = 2; i < expr.length; i++ ) {
-      result = func( result, evalScheem( expr[ i ], env ) );
+    var result = args[ 0 ];
+    for( var i = 1; i < args.length; i++ ) {
+      result = func( result, args[ i ] );
     }
     return result;
   }
 
-  function booleanVariadic( name, expr, env, checker, func, invert ) {
-    invert = invert === undefined ? false : invert;
-    checkArgs( name, expr, 2, checkArgsMode.atLeast );
-    checkTypes( name, expr, env, checker );
-    var result = evalScheem( expr[ 1 ], env );
-    for( var i = 2; i < expr.length; i++ ) {
-      var matches = func( result, evalScheem( expr[ i ], env ) );
+  function booleanVariadic( name, expr, env, checkerFunc, func, invert ) {
+    var args = evalArgs( expr.slice( 1 ), env );
+    checkArgCount( name, args.length, 2, checkArgsMode.atLeast );
+    checkExpectedTypes( name, args, checkerFunc ); 
+    
+    var result = args[ 0 ];
+    for( var i = 1; i < args.length; i++ ) {
+      var matches = func( result, args[ i ] );
       if( ( invert ? matches : !matches ) ) {
         return invert;
       }
@@ -362,75 +376,80 @@ var evalScheem, evalScheemString, lookup;
     };
   }
   
-  function bindMember( bindings, obj, key ) {
-    var v = key.toLowerCase();
-    
-    if( builtIns[ v ] !== undefined ) {
-      throw new CannotOverrideBuiltInException( v );
+  function bindProperty( bindings, obj, mapping ) {
+    if( builtIns[ mapping.value ] !== undefined ) {
+      throw new CannotOverrideBuiltInException( mapping.value );
     }    
     
-    var member = obj[ key ];
+    var prop = obj[ mapping.key ];
     
-    if( member === undefined ) return;
+    if( prop === undefined ) return;
 
-    var memberType = typeof member;    
+    var propertyType = typeof prop;    
 
     
     //only handle properties that are numbers or arrays or bools for now
-    if( member instanceof Array || memberType === 'number' || memberType === 'boolean' ) {
-      bindings[ v ] = member;
-    } else if( memberType === 'function' ) {
-      bindings[ v ] = function( args, env ) {        
+    if( prop instanceof Array || propertyType === 'number' || propertyType === 'boolean' ) {
+      bindings[ mapping.value ] = prop;
+    } else if( propertyType === 'function' ) {
+      bindings[ mapping.value ] = function( args, env ) {        
         var values = args.map( function( e ) {
           return evalScheem( e, env );
         });
         
-        return  obj[ key ].apply( obj, ( values.length === 1 && values[ 0 ] instanceof Array ) ? values[ 0 ] : values );
+        return obj[ mapping.key ].apply( obj, ( values.length === 1 && values[ 0 ] instanceof Array ) ? values[ 0 ] : values );
       }
     }  
   }
   
-  function addJsObject( bindings, obj, members ) {
-    if( members !== undefined && members instanceof Array ) {
-      for( var i = 0; i < members.length; i++ ) {
-        var key = members[ i ];
-        bindMember( bindings, obj, key );
+  function addJsObject( bindings, obj, options ) {
+    if( options && options.mappings && options.mappings instanceof Array ) {
+      var mappings = options.mappings.map( function( e ) {
+        if( e.key !== undefined && e.value !== undefined ) {
+          return e;
+        } else {
+          return {
+            key: e,
+            value: e.toLowerCase()
+          }
+        }        
+      });
+    
+      for( var i = 0; i < mappings.length; i++ ) {
+        bindProperty( bindings, obj, mappings[ i ] );
       }
       return;
     }    
     
     for( var key in obj ) {
       if( obj.hasOwnProperty( key ) ) {
-        bindMember( bindings, obj, key );
+        bindProperty( bindings, obj, key );
       }
     }
   }
       
   function initBindings( env ) {
-    if( env === undefined ) {
-      env = {};
-    }
-    
-    if( env.bindings === undefined ) {
+    env = env || {};
+    if( env.bindings === undefined && env.outer === undefined ) {
       env.bindings = {};
-    }
 
-    for( var key in builtIns ) {
-      if( builtIns.hasOwnProperty( key ) ) {
-        if( env.bindings[ key ] === undefined ) {
-          addBuiltin( env.bindings, key, builtIns[ key ] );
+      for( var key in builtIns ) {
+        if( builtIns.hasOwnProperty( key ) ) {
+          if( env.bindings[ key ] === undefined ) {
+            addBuiltin( env.bindings, key, builtIns[ key ] );
+          }
         }
       }
+      
+      addJsObject( env.bindings, Math, { mappings: [
+        'abs', 'acos', 'asin', 'atan', 'atan2', 'ceil', 'cos', 'exp', 'floor', 'log', 'max', 'min', 
+        'pow', 'random', 'round', 'sin', 'sqrt', 'tan', { key: 'E', value: 'euler' }, 'LN2', 'LN10', 
+        'LOG2E', 'LOG10E', 'PI', 'SQRT1_2', 'SQRT2'
+      ]});
     }
-    
-    addJsObject( env.bindings, Math, [
-      'E', 'LN2', 'LN10', 'LOG2E', 'LOG10E', 'PI', 'SQRT1_2', 'SQRT2', 'abs', 'acos', 'asin', 'atan',
-      'atan2', 'ceil', 'cos', 'exp', 'floor', 'log', 'max', 'min', 'pow', 'random', 'round', 'sin', 
-      'sqrt', 'tan'
-    ]);
   }
 
-  function update(env, v, val) {
+  function update( v, val, env ) {
     if( env === undefined ) {
       throw new UndefinedVariableExpection( v );
     }   
@@ -443,29 +462,32 @@ var evalScheem, evalScheemString, lookup;
       env.bindings[ v ] = val;
       return;
     }
-    update( env.outer, v, val );
+    
+    update( v, val, env.outer );
   }
 
-  function addBinding(env, v, val) {            
+  function addBinding( v, val, env ) {            
     if( builtIns[ v ] !== undefined ) {
       throw new CannotOverrideBuiltInException( v );
     }
     
     if( env.bindings[ v ] !== undefined ) {
       throw new VariableAlreadyDefinedExpection( v );
-    }      
+    } 
+    
     env.bindings[ v ] = val;
   }
 
-  lookup = function( env, v ) {
+  lookup = function( v, env ) {
     if( env === undefined ) {
       return undefined;
     }
+    
     if( env.bindings[ v ] !== undefined ) {
       return env.bindings[ v ];
     }
     
-    return lookup( env.outer, v );
+    return lookup( v, env.outer );
   };
   
   evalScheem = function( expr, env ) {
@@ -476,11 +498,11 @@ var evalScheem, evalScheemString, lookup;
     }
     
     if( typeof expr === 'string' ) {
-      return lookup( env, expr );
+      return lookup( expr, env );
     }
 
     var func = evalScheem( expr[ 0 ], env );
-    return func( expr.slice( 1 ), env );
+    return func( expr.slice( 1 ), env );    
   };
 
   /*global SCHEEM:false */

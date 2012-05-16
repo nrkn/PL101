@@ -596,21 +596,21 @@ suite('define', function() {
     test('an atom', function() {
         evalScheem(['define', 'a', ['quote','cat']], env);
         assert.deepEqual(
-            lookup( env, 'a' ),
+            lookup( 'a', env ),
             'cat'
         );
     });
     test('a list', function() {
         evalScheem(['define', 'b', ['quote',['a','b','c']]], env);
         assert.deepEqual(
-            lookup( env, 'b' ),
+            lookup( 'b', env ),
             ['a','b','c']
         );
     });
     test('an expression', function() {
         evalScheem(['define', 'c', ['+', 2, 2]], env);
         assert.deepEqual(
-            lookup( env, 'c' ),
+            lookup( 'c', env ),
             4
         );
     });   
@@ -639,21 +639,21 @@ suite('set', function() {
     test('an atom', function() {
         evalScheem(['set!', 'c', ['quote','dog']], env);
         assert.deepEqual(
-            lookup( env, 'c' ),
+            lookup( 'c', env ),
             'dog'
         );
     });
     test('a list', function() {
         evalScheem(['set!', 'a', ['quote',['c','b','a']]], env);
         assert.deepEqual(
-            lookup( env, 'a' ),
+            lookup( 'a', env ),
             ['c','b','a']
         );
     });
     test('an expression', function() {
         evalScheem(['set!', 'b', ['+', 2, 3]], env);
         assert.deepEqual(
-            lookup( env, 'b' ),
+            lookup( 'b', env ),
             5
         );
     });    
@@ -1050,7 +1050,7 @@ suite('lambda', function() {
     );  
   });
   test('recursive', function(){
-      assert.deepEqual(        
+      assert.deepEqual(
         evalScheem([
           'begin', [ 
             'define', 'fib', [
@@ -1066,12 +1066,13 @@ suite('lambda', function() {
         ], {}),  
         34
       );  
-  });   
+  }); 
 });
 
 /*todo: 
     len
     reverse
+    ah have a look for what else
 */
   </script>
   <script>

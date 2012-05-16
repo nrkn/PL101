@@ -29,6 +29,18 @@ suite('quote', function() {
             3
         );
     });
+    test('a char', function() {
+        assert.deepEqual(
+            evalScheem(['quote', '#\\z'], {}),
+            '#\\z'
+        );
+    });    
+    test('a unicode char', function() {
+        assert.deepEqual(
+            evalScheem(['quote', '#\\263a'], {}),
+            '#\\263a'
+        );
+    });
     test('an atom', function() {
         assert.deepEqual(
             evalScheem(['quote', 'dog'], {}),

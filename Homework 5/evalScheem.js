@@ -203,24 +203,32 @@ var evalScheem, evalScheemString, lookup;
         },
         'lookup': {
           func: function( expr, env ) {
-                  checkArgCount( 'hash lookup', expr.length - 1, 2 );       
+                  checkArgCount( 'lookup', expr.length - 1, 2 );       
                   
-                  var hash = evalScheem( expr[ 1 ], env );                  
-                  return hash[ expr[ 2 ] ];
+                  var item = evalScheem( expr[ 1 ], env );
+                  
+                  if( item instanceof Array ) {
+                    var index = evalScheem( expr[ 2 ], env );
+                    return evalScheem( item[ index ], env );
+                  }
+                  
+                  return evalScheem( item[ expr[ 2 ] ], env );
                 }
         },
         'update': {
           func: function( expr, env ) {
-                  checkArgCount( 'hash update', expr.length - 1, 2 );       
-                  var hash = evalScheem( expr[ 1 ], env ),
+                  checkArgCount( 'update', expr.length - 1, 2 );       
+                  var item = evalScheem( expr[ 1 ], env ),
                       keyValuePair = expr[ 2 ];
-                  checkArgCount( 'hash keyValuePair', keyValuePair.length, 2 );        
-                  var key = keyValuePair[ 0 ],
+                  checkArgCount( 'keyValuePair', keyValuePair.length, 2 );        
+                  var key = item instanceof Array ? 
+                        evalScheem( keyValuePair[ 0 ], env ) :
+                        keyValuePair[ 0 ],
                       value = evalScheem( keyValuePair[ 1 ], env );
                       
-                  hash[ key ] = value;
+                  item[ key ] = value;
                   
-                  return hash;
+                  return item;
                 }      
         },
         'keys': {
@@ -258,10 +266,16 @@ var evalScheem, evalScheemString, lookup;
                   var args = evalArgs( expr.slice( 1 ), env );
                   checkArgCount( 'alert', args.length, 1 );
                   
+                  var s = args[ 0 ] instanceof Array ? 
+                    arrayToString( args[ 0 ] ) : 
+                    isChar( args[ 0 ] ) ?
+                      arrayToString( [ args[ 0 ] ] ) :
+                      args[ 0 ];
+                  
                   if( window && window.alert ) {
-                    window.alert( args[ 0 ] );
+                    window.alert( s );
                   } else if( console && console.log ) {
-                    console.log( args[ 0 ] );
+                    console.log( s );
                   }
                   
                   return args[ 0 ];
@@ -560,6 +574,75 @@ var evalScheem, evalScheemString, lookup;
     
     env.bindings[ v ] = val;
   }
+  
+  function arrayToString( chars ) {
+    var str = '',
+        special = {
+          'space' : ' ',
+          'tab' : '\t',
+          'linefeed' : '\n',
+          'return' : '\r'
+        };
+        
+    for( var i = 0; i < chars.length; i++ ) {
+      var c = chars[ i ];
+      if( isChar( c ) ) {
+        var s = c.substr( 2 );
+        if( s.length === 1 ) {
+          str += s;
+          continue;
+        }
+        
+        if( special[ s ] !== undefined ) {
+          str += special[ s ];
+          continue;
+        }
+        
+        str += String.fromCharCode( parseInt( s, 16 ) );
+        continue;
+      }
+
+      str += c.toString();
+    }
+    
+    return str;
+  }
+  
+  function stringToChars( str ) {
+    var chars = [],
+        charLits = /[0-9a-zA-Z!$%&*+\-.\/:<=>?@^_~|]/,
+        special = {
+          ' '  : '#\\space',
+          '\t' : '#\\tab',
+          '\n' : '#\\linefeed',
+          '\r' : '#\\return'
+        };
+        
+    for( var i = 1; i < str.length - 1; i++ ) {
+      var c = str.charAt( i );
+      if( c.match( charLits ) ) {
+        chars.push( "#\\" + c );
+        continue;
+      }
+      
+      if( special[ c ] !== undefined ) {
+        chars.push( special[ c ] );
+        continue;
+      }
+      
+      chars.push( '#\\' + c.charCodeAt( 0 ).toString( 16 ) );      
+    }
+    
+    return chars;
+  }
+  
+  function isChar( expr ) {
+    return expr.indexOf( '#\\' ) === 0;
+  }
+  
+  function isString( expr ) {
+    return expr.charAt( 0 ) === '"';
+  }
 
   lookup = function( v, env ) {
     if( env === undefined ) {
@@ -580,7 +663,14 @@ var evalScheem, evalScheemString, lookup;
       return expr;
     }
     
-    if( typeof expr === 'string' ) {
+    if( typeof expr === 'string' ) {      
+      if( isChar( expr ) ) {
+        return expr;
+      }
+      if( isString( expr ) ) {
+        return stringToChars( expr );
+      }
+      
       return lookup( expr, env );
     }
 

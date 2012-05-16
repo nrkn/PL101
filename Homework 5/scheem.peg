@@ -3,11 +3,41 @@ start =
         { return expr; }
 
 validchar = 
-    [0-9a-zA-Z_?!+\-=@#$%^&*/.<>|]
-
+    [0-9a-zA-Z!$%&*+\-./:<=>?@^_~|]
+    
 atom =
     decimal
   / integer
+  / bool
+  / char
+  / str: string
+        {
+          var chars = [],
+              charLits = /[0-9a-zA-Z!$%&*+\-.\/:<=>?@^_~|]/,
+              special = {
+                ' '  : '#\\space',
+                '\t' : '#\\tab',
+                '\n' : '#\\linefeed',
+                '\r' : '#\\return'
+              };
+              
+          for( var i = 1; i < str.length - 1; i++ ) {
+            var c = str.charAt( i );
+            if( c.match( charLits ) ) {
+              chars.push( "#\\" + c );
+              continue;
+            }
+            
+            if( special[ c ] !== undefined ) {
+              chars.push( special[ c ] );
+              continue;
+            }
+            
+            chars.push( '#\\' + c.charCodeAt( 0 ).toString( 16 ) );      
+          }
+          
+          return chars;        
+        }
   / chars: validchar+
         { return chars.join( '' ); }     
 
@@ -21,8 +51,54 @@ decimal =
   / sign: [+-]? [.] decimals: integer
         { return Number( '0.' + decimals ) * ( sign === '-' ? -1 : 1 ); }    
   / sign: [+-]? number: integer
-        { return number * ( sign === '-' ? -1 : 1 ); }
-         
+        { return number * ( sign === '-' ? -1 : 1 ); }   
+
+bool =
+    '#t'
+  / '#f'
+
+hex =
+    [A-Fa-f0-9]
+  
+char =
+    '#\\' identifier: validchar
+        { return '#\\' + identifier; }         
+  / '#\\#'
+  / '#\\space' 
+  / '#\\newline'
+  / '#\\tab'
+  / '#\\linefeed'
+  / '#\\return'
+  / '#\\' first: hex second: hex
+       { return '#\\' + first + second; }
+  / '#\\' first: hex second: hex third: hex
+       { return '#\\' + first + second + third; }
+  / '#\\' first: hex second: hex third: hex fourth: hex
+       { return '#\\' + first + second + third + fourth; }
+       
+string  = 
+    '"' '"' 
+        { return '""'; }
+  / '"' chars:schars '"' 
+        { return '"' + chars + '"'; }
+
+schars
+  = chars:schar+ { return chars.join(""); }
+
+schar
+  = [^"\\\0-\x1F\x7f]
+  / '\\"' { return '"'; }
+  / "\\\\" { return "\\"; }
+  / "\\/" { return "/"; }
+  / "\\b" { return "\b"; }
+  / "\\f" { return "\f"; }
+  / "\\n" { return "\n"; }
+  / "\\r" { return "\r"; }
+  / "\\t" { return "\t"; }
+  / "\\u" h1:hex h2:hex h3:hex h4:hex {
+      return String.fromCharCode(parseInt("0x" + h1 + h2 + h3 + h4));
+    }  
+  
 whitespace =
     [ \t\r\n]
  

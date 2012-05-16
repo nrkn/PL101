@@ -1,0 +1,29 @@
+( begin
+  ( define map
+    '(
+      '( "####  ####" )
+      '( "#  ####  #" )
+      '( "#        #" )
+      '( "##      ##" )
+      '( " #      # " )
+      '( " #      # " )
+      '( "##      ##" )
+      '( "#        #" )
+      '( "#  ####  #" )
+      '( "####  ####" )
+    )
+  )
+  
+  ( define x 2 )
+  ( define y 2 )
+  
+  ( define update-map 
+    ( lambda ( x y c ) 
+      ( update map 
+        ( y ( update ( lookup map y ) ( x c ) ) ) 
+      )
+    )
+  )  
+
+  ( update-map x y #\@ )
+)

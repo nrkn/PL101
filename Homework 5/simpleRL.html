@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SimpleRL - SCHEEM</title>
+    <script src="http://code.jquery.com/jquery-1.6.4.min.js"></script>
+    <script src="peg-0.7.0.min.js"></script>
+    <script src="evalScheem.js"></script>
+    <style>
+      pre {
+        background: #000;
+        color: #aaa;
+        font-weight: bold;
+        margin: 0;
+        padding: 1em;
+        font-family: "Consolas", monospace;   
+        width: 38em;
+        height: 23em;
+      }
+    </style>
+    <script>
+      var env = {},
+          SCHEEM = {},
+          keys = {
+            38: 'up',
+            40: 'down',
+            37: 'left',
+            39: 'right'
+          };
+   
+      $(document).ready(function() {        
+        $.get( "scheem.peg", function(data) {
+          SCHEEM = PEG.buildParser( data );          
+          $.get( "simpleRL.scheem", function(data) {
+            $( 'pre' ).html( evalScheemString( data, env ) )
+            
+            $( document ).keyup( function( event ){
+              var pressed = keys[ event.which ];
+              if( pressed ) {
+                $( 'pre' ).html(
+                  evalScheemString( "( move '" + pressed + " )", env )
+                );
+              }
+            });
+          }, 'text');                    
+        }, 'text');
+      });
+    </script>
+  </head>
+  <body>
+    <pre></pre>
+  </body>
+</html>

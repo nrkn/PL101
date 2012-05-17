@@ -61,20 +61,20 @@ hex =
     [A-Fa-f0-9]
   
 char =
-    '#\\' identifier: validchar
-        { return '#\\' + identifier; }         
-  / '#\\#'
+    '#\\#'
   / '#\\space' 
   / '#\\newline'
   / '#\\tab'
   / '#\\linefeed'
   / '#\\return'
   / '#\\' first: hex second: hex
-       { return '#\\' + first + second; }
+      { return '#\\' + first + second; }
   / '#\\' first: hex second: hex third: hex
-       { return '#\\' + first + second + third; }
+      { return '#\\' + first + second + third; }
   / '#\\' first: hex second: hex third: hex fourth: hex
-       { return '#\\' + first + second + third + fourth; }
+      { return '#\\' + first + second + third + fourth; }
+  / '#\\' identifier: validchar
+      { return '#\\' + identifier; }         
        
 string  = 
     '"' '"' 
@@ -141,6 +141,10 @@ group =
             return result; 
          }
 
+empty =   
+    startlist endlist
+        { return []; }    
+         
 quote = 
     "'" expr: expression    
         { return [ 'quote', expr ]; }
@@ -148,4 +152,5 @@ quote =
 expression =
     atom
   / group
+  / empty
   / quote

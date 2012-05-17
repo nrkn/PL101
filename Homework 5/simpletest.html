@@ -53,6 +53,22 @@ suite('quote', function() {
             [1, 2, 3]
         );
     });
+    test('a string', function() {
+        assert.deepEqual(
+            evalScheemString("'\"The quick\"", {}),
+            [
+              "#\\T",
+              "#\\h",
+              "#\\e",
+              "#\\space",
+              "#\\q",
+              "#\\u",
+              "#\\i",
+              "#\\c",
+              "#\\k"
+            ]
+        );
+    });    
 });
 suite('add', function() {
     test('two numbers', function() {
@@ -1089,85 +1105,232 @@ suite('hash', function() {
   });  
   test('create empty then update', function() {
     assert.deepEqual(        
-        evalScheem([
-          'begin',
-          [ 'define', 'a', [ 'hash' ] ],
-          [ 'update', 'a', [ 'b', 13 ] ],
-          [ 'lookup', 'a', 'b' ]          
-        ], {}),
+        evalScheemString(
+          "( begin ( define a ( hash ) ) ( update a ( 'b 13 ) ) ( lookup a 'b ) )", 
+        {}),
         13
-    );    
+    );
   });  
   test('create with args then lookup', function() {
     assert.deepEqual(        
-        evalScheem([
-          'begin',
-          [ 'define', 'a', [ 'hash', [ 'b', 13 ] ] ],
-          [ 'lookup', 'a', 'b' ]          
-        ], {}),
+        evalScheemString(
+          "( begin ( define a ( hash ( b 13 ) ) ) ( lookup a 'b ) )", 
+        {}),
         13
     );    
   });  
   test('create with multiple args then lookup', function() {
     assert.deepEqual(        
-        evalScheem([
-          'begin',
-          [ 'define', 'a', [ 'hash', [ 'a', 12 ], [ 'b', 13 ] ] ],
-          [ '+', [ 'lookup', 'a', 'a' ], [ 'lookup', 'a', 'b' ] ]          
-        ], {}),
+        evalScheemString(
+          "( begin ( define a ( hash ( a 12 ) ( b 13 ) ) ) ( + ( lookup a 'a ) ( lookup a 'b ) ) )", 
+        {}),
         25
     );    
   });
   test('create with multiple args then check if contains passes', function() {
-    assert.deepEqual(        
-        evalScheem([
-          'begin',
-          [ 'define', 'a', [ 'hash', [ 'a', 12 ], [ 'b', 13 ] ] ],
-          [ 'contains', 'a', 'b' ]          
-        ], {}),
+    assert.deepEqual(                
+        evalScheemString(
+          "( begin ( define a ( hash ( a 12 ) ( b 13 ) ) ) ( contains a 'b ) )", 
+        {}),
         '#t'
     );    
   });    
   test('create with multiple args then check if contains fails', function() {
     assert.deepEqual(        
-        evalScheem([
-          'begin',
-          [ 'define', 'a', [ 'hash', [ 'a', 12 ], [ 'b', 13 ] ] ],
-          [ 'contains', 'a', 'c' ]          
-        ], {}),
+        evalScheemString(
+          "( begin ( define a ( hash ( a 12 ) ( b 13 ) ) ) ( contains a 'c ) )", 
+        {}),
         '#f'
     );    
   });    
   test('get hash keys', function() {
     assert.deepEqual(        
-        evalScheem([
-          'begin',
-          [ 'define', 'a', [ 'hash', [ 'a', 12 ], [ 'b', 13 ], [ 'c', 21 ] ] ],
-          [ 'keys', 'a' ]          
-        ], {}),
-        [ 'a', 'b', 'c' ]
+        evalScheemString(
+          "( begin ( define a ( hash ( a 12 ) ( b 13 ) ) ) ( keys a ) )", 
+        {}),        
+        [ 'a', 'b' ]
     );    
   });    
   test('get hash values', function() {
     assert.deepEqual(        
-        evalScheem([
-          'begin',
-          [ 'define', 'a', [ 'hash', [ 'a', 12 ], [ 'b', 13 ], [ 'c', 21 ] ] ],
-          [ 'values', 'a' ]               
-        ], {}),
-        [ 12, 13, 21 ]
+        evalScheemString(
+          "( begin ( define a ( hash ( a 12 ) ( b 13 ) ) ) ( values a ) )", 
+        {}),        
+        [ 12, 13 ]
     );    
   });   
   test('get hash length', function() {
     assert.deepEqual(        
-        evalScheem([
-          'begin',
-          [ 'define', 'a', [ 'hash', [ 'a', 12 ], [ 'b', 13 ], [ 'c', 21 ] ] ],
-          [ 'len', 'a' ]
-        ], {}),
+        evalScheemString(
+          "( begin ( define a ( hash ( a 12 ) ( b 13 ) ) ) ( len a ) )", 
+        {}),          
+        2
+    );    
+  });
+  test('create hash of hashes', function() {
+    assert.deepEqual(        
+        evalScheemString(
+          "( hash ( up ( hash ( x 0 ) ( y -1 ) ) ) ( down ( hash ( x 0 ) ( y 1 ) ) ) )",
+        {}),
+        { "up": { "x": 0, "y": -1 }, "down": { "x": 0, "y": 1 } }
+    );    
+  });    
+  test('lookup hash in hashes', function() {
+    assert.deepEqual(        
+        evalScheemString(
+          "( lookup ( hash ( up ( hash ( x 0 ) ( y -1 ) ) ) ( down ( hash ( x 0 ) ( y 1 ) ) ) ) 'up )",
+        {}),
+        { "x": 0, "y": -1 }
+    );    
+  }); 
+
+  test('pass key to lambda for lookup', function() {
+    assert.deepEqual(        
+        evalScheemString(
+          "( begin ( define a ( hash ( b 10 ) ) ) ( define c ( lambda ( d ) ( lookup a d ) ) ) ( c 'b ) ) ",
+        {}),
+        10
+    );
+  });
+
+  test('pass key to lambda for update', function() {
+    assert.deepEqual(        
+        evalScheemString(
+          "( begin ( define a ( hash ( b 10 ) ) ) ( define c ( lambda ( d e ) ( update a ( d e ) ) ) ) ( c 'b 12 ) ( lookup a 'b ) ) ",
+        {}),
+        12
+    );
+  }); 
+  
+  test('pass key to lambda for contains', function() {
+    assert.deepEqual(        
+        evalScheemString(
+          "( begin ( define a ( hash ( b 10 ) ) ) ( define c ( lambda ( d ) ( contains a d ) ) ) ( c 'b ) )",
+        {}),
+        '#t'
+    );
+  });
+});  
+suite('list operations', function() {
+  test('create empty', function() {
+    assert.deepEqual(        
+        evalScheemString("'()", {}),
+        []
+    );    
+  });  
+  test('update empty', function() {
+    assert.deepEqual(        
+        evalScheemString("(update '() ( 0 5 ) )", {}),
+        [ 5 ]
+    );    
+  });
+  test('cons empty', function() {
+    assert.deepEqual(        
+        evalScheemString("(cons '() 5 )", {}),
+        [ [], 5 ]
+    );    
+  });  
+  test('create', function() {
+    assert.deepEqual(        
+        evalScheem([ 'quote', [ 1, 2, 3, 4 ]], {}),
+        [ 1, 2, 3, 4 ]
+    );    
+  });
+  test('create nested', function() {
+    assert.deepEqual(        
+        evalScheemString("'( ( 1 2 3 ) ( 4 5 6 ) ( 7 8 9 ) )", {}),
+        [ [ 1, 2, 3 ], [ 4, 5, 6 ], [ 7, 8, 9 ] ]
+    );    
+  });
+  
+  test('len', function() {
+    assert.deepEqual(        
+        evalScheem([ 'len', [ 'quote', [ 1, 2, 3, 4 ]]], {}),
+        4
+    );    
+  });
+  test('reverse', function() {
+    assert.deepEqual(        
+        evalScheem([ 'reverse', [ 'quote', [ 1, 2, 3, 4 ]]], {}),
+        [ 4, 3, 2, 1 ]
+    );    
+  }); 
+  test('lookup', function() {
+    assert.deepEqual(        
+        evalScheem([ 'lookup', [ 'quote', [ 1, 2, 3, 4 ]], 2 ], {}),
         3
     );    
   });   
+  test('update', function() {
+    assert.deepEqual(        
+        evalScheem([ 'update', [ 'quote', [ 1, 2, 3, 4 ]], [ 2, 5 ] ], {}),
+        [ 1, 2, 5, 4 ]
+    );    
+  });
+  test('lookup nested', function(){
+    assert.deepEqual(        
+        evalScheemString(
+          "( lookup '( ( 1 2 3 ) ( 4 5 6 ) ( 7 8 9 ) ) 1 )", 
+        {}),
+        [ 4, 5, 6 ]
+    );       
+  });
+  test('lookup nested then lookup again', function(){
+    assert.deepEqual(        
+        evalScheemString(
+          "( lookup ( lookup '( ( 1 2 3 ) ( 4 5 6 ) ( 7 8 9 ) ) 1 ) 1 )", 
+        {}),
+        5
+    );       
+  }); 
+  test('update nested', function(){
+    assert.deepEqual(        
+        evalScheemString(
+          "( update '( ( 1 2 3 ) ( 4 5 6 ) ( 7 8 9 ) ) ( 1 '( 6 5 4 ) ) )", 
+        {}),
+        [ [ 1, 2, 3 ], [ 6, 5, 4 ], [ 7, 8, 9 ] ]
+    );       
+  });  
+  test('append item to list', function() {
+    assert.deepEqual(        
+        evalScheemString(
+          "( append '( 1 2 3 ) 4 )", 
+        {}),
+        [ 1, 2, 3, 4 ]
+    );           
+  });
+  test('append items to list', function() {
+    assert.deepEqual(        
+        evalScheemString(
+          "( append '( 1 2 3 ) 4 5 )", 
+        {}),
+        [ 1, 2, 3, 4, 5 ]
+    );           
+  });
+  test('append list to list', function() {
+    assert.deepEqual(        
+        evalScheemString(
+          "( append '( 1 2 3 ) '( 4 5 6 ) )", 
+        {}),
+        [ 1, 2, 3, 4, 5, 6 ]
+    );           
+  });
+  test('append lists to list', function() {
+    assert.deepEqual(        
+        evalScheemString(
+          "( append '( 1 2 3 ) '( 4 5 6 ) '( 7 8 9 ) )", 
+        {}),
+        [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+    );           
+  });
+  test('append nested to list', function() {
+    assert.deepEqual(        
+        evalScheemString(
+          "( append '( 1 2 3 ) '( ( 4 5 6 ) ( 7 8 9 ) ) )", 
+        {}),
+        [ 1, 2, 3, [ 4, 5, 6 ], [ 7, 8, 9 ] ]
+    );           
+  });
 });  
 /*todo: 
     len

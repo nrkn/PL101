@@ -44,7 +44,8 @@ var evalScheem, evalScheemString, lookup;
         },
         '=': {
           handler: handlers.booleanVariadic,
-          func: function( a, b ) { return a === b; }
+          func: function( a, b ) { return a === b; },
+          checker: expectAny
         },    
         '!=': {
           handler: handlers.booleanVariadic,
@@ -202,28 +203,25 @@ var evalScheem, evalScheemString, lookup;
                 }
         },
         'lookup': {
-          func: function( expr, env ) {
+          func: function( expr, env ) {                  
                   checkArgCount( 'lookup', expr.length - 1, 2 );       
                   
-                  var item = evalScheem( expr[ 1 ], env );
-                  
-                  if( item instanceof Array ) {
-                    var index = evalScheem( expr[ 2 ], env );
-                    return evalScheem( item[ index ], env );
-                  }
-                  
-                  return evalScheem( item[ expr[ 2 ] ], env );
+                  var item = evalScheem( expr[ 1 ], env ),
+                      index = evalScheem( expr[ 2 ], env );
+                      
+                  return evalScheem( item[ index ], env );
                 }
         },
         'update': {
           func: function( expr, env ) {
-                  checkArgCount( 'update', expr.length - 1, 2 );       
+                  checkArgCount( 'update', expr.length - 1, 2 ); 
+                  
                   var item = evalScheem( expr[ 1 ], env ),
                       keyValuePair = expr[ 2 ];
+                  
                   checkArgCount( 'keyValuePair', keyValuePair.length, 2 );        
-                  var key = item instanceof Array ? 
-                        evalScheem( keyValuePair[ 0 ], env ) :
-                        keyValuePair[ 0 ],
+                  
+                  var key = evalScheem( keyValuePair[ 0 ], env ),
                       value = evalScheem( keyValuePair[ 1 ], env );
                       
                   item[ key ] = value;
@@ -266,11 +264,7 @@ var evalScheem, evalScheemString, lookup;
                   var args = evalArgs( expr.slice( 1 ), env );
                   checkArgCount( 'alert', args.length, 1 );
                   
-                  var s = args[ 0 ] instanceof Array ? 
-                    arrayToString( args[ 0 ] ) : 
-                    isChar( args[ 0 ] ) ?
-                      arrayToString( [ args[ 0 ] ] ) :
-                      args[ 0 ];
+                  var s = toString( args[ 0 ] );
                   
                   if( window && window.alert ) {
                     window.alert( s );
@@ -280,6 +274,14 @@ var evalScheem, evalScheemString, lookup;
                   
                   return args[ 0 ];
                 }
+        },
+        'out' : {
+          func: function( expr, env ) {
+                  var args = evalArgs( expr.slice( 1 ), env );
+                  checkArgCount( 'out', args.length, 1 );
+                  
+                  return toString( args[ 0 ] );
+                }        
         },
         'len': {
           func: function( expr, env ) {
@@ -322,9 +324,52 @@ var evalScheem, evalScheemString, lookup;
                   }
                   
                   //hash contains key
-                  return item[ expr[ 2 ] ] !== undefined ? _true : _false;
+                  return item[ evalScheem( expr[ 2 ], env ) ] !== undefined ? _true : _false;
                 }
-        }
+        },
+        'append': {
+          func: function( expr, env ) {                         
+                  var args = evalArgs( expr.slice( 1 ), env );
+                  checkArgCount( 'append', args.length, 1, checkArgsMode.atLeast );
+                  checkExpectedTypes( 'append', [ args[ 0 ] ], expectArray );   
+                  
+                  var item = args[ 0 ];                  
+                  for( var i = 1; i < args.length; i++ ) {
+                    item.push.apply( item, toArray( args[ i ] ) );
+                  }                        
+                  return item;
+                }
+        },
+        'join': {
+          func: function( expr, env ) {                         
+                  var args = evalArgs( expr.slice( 1 ), env );
+                  checkArgCount( 'join', args.length, 2 );
+                  checkExpectedTypes( 'join', [ args[ 0 ] ], expectArray );   
+                  
+                  var result = [];
+                  for( var i = 0; i < args[ 0 ].length; i++ ) {
+                    result = result.concat( args[ 0 ][ i ] );
+                    if( i < args[ 0 ].length - 1 ) {
+                      result.push( args[ 1 ] );
+                    }
+                  }
+                  return result;
+                }
+        },
+        'replace': {
+          func: function( expr, env ) {                         
+                  var args = evalArgs( expr.slice( 1 ), env );
+                  checkArgCount( 'replace', args.length, 3 );
+                  checkExpectedTypes( 'replace', [ args[ 0 ] ], expectArray );   
+                  
+                  for( var i = 0; i < args[ 0 ].length; i++ ) {
+                    if( args[ 0 ][ i ] === args[ 1 ] ) {
+                      args[ 0 ][ i ] = args[ 2 ];
+                    }
+                  }
+                  return args[ 0 ];
+                }
+        }        
       };
 
   function NotEnoughArgumentsException( name, expects ) {
@@ -373,6 +418,13 @@ var evalScheem, evalScheemString, lookup;
     return {
       name: 'CannotOverrideBuiltInException',
       message: 'Cannot override built-in function ' + name + '.'
+    };
+  }
+  
+  function UnknownExpressionException( expr ) {
+    return {
+      name: 'UnknownExpressionException',
+      message: 'Could not determine how to handle expression ' + JSON.stringify( expr ) + '.'
     };
   }
   
@@ -426,6 +478,13 @@ var evalScheem, evalScheemString, lookup;
       actual: arg === _true || arg === _false ? 'boolean' : typeof arg
     };  
   }  
+  
+  function expectAny( arg ) {
+    return {
+      expected: typeof arg,
+      actual: typeof arg
+    }
+  }    
   
   function checkExpectedTypes( name, args, typeCheckerFunc ) {
     for( var i = 0; i < args.length; i++ ) {
@@ -643,6 +702,20 @@ var evalScheem, evalScheemString, lookup;
   function isString( expr ) {
     return expr.charAt( 0 ) === '"';
   }
+  
+  function toString( item ) {
+    return  item instanceof Array ? 
+              arrayToString( item ) : 
+              isChar( item ) ?
+                arrayToString( [ item ] ) :
+                item.toString();
+  }
+  
+  function toArray( item ) {
+    return item instanceof Array ?
+           item :
+           [ item ];
+  }
 
   lookup = function( v, env ) {
     if( env === undefined ) {
@@ -673,9 +746,20 @@ var evalScheem, evalScheemString, lookup;
       
       return lookup( expr, env );
     }
+    
+    //probably hash - yuck, this smells bad
+    //but all the tests pass right
+    if( !( expr instanceof Array ) ) {
+      return expr;
+    }
 
     var func = evalScheem( expr[ 0 ], env );
-    return func( expr.slice( 1 ), env );    
+    if( typeof func === 'function' ) {
+      return func( expr.slice( 1 ), env );    
+    }
+    
+    //list
+    return expr;
   };
 
   /*global SCHEEM:false */

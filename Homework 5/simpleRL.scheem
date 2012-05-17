@@ -1,29 +1,124 @@
 ( begin
   ( define map
     '(
-      '( "####  ####" )
-      '( "#  ####  #" )
-      '( "#        #" )
-      '( "##      ##" )
-      '( " #      # " )
-      '( " #      # " )
-      '( "##      ##" )
-      '( "#        #" )
-      '( "#  ####  #" )
-      '( "####  ####" )
+      "####  ####"
+      "#  ####  #"
+      "#        #"
+      "##      ##"
+      " #      # "
+      " #      # "
+      "##      ##"
+      "#        #"
+      "#  ####  #"
+      "####  ####"
+    )
+  )   
+
+  ( define position
+    ( hash 
+      ( x 2 )
+      ( y 2 )
     )
   )
   
-  ( define x 2 )
-  ( define y 2 )
+  ( define modifiers 
+    ( hash
+      ( up  
+        ( hash
+          ( x 0 )
+          ( y -1 )
+        )
+      )
+      ( down  
+        ( hash
+          ( x 0 )
+          ( y 1 )
+        )
+      )
+      ( left  
+        ( hash
+          ( x -1 )
+          ( y 0 )
+        )
+      )
+      ( right  
+        ( hash
+          ( x 1 )
+          ( y 0 )
+        )
+      )
+      ( none
+        ( hash
+          ( x 0 )
+          ( y 0 )
+        )
+      )
+    )
+  ) 
   
   ( define update-map 
-    ( lambda ( x y c ) 
-      ( update map 
-        ( y ( update ( lookup map y ) ( x c ) ) ) 
+    ( lambda ( position c ) 
+      ( begin
+        ( define row ( lookup map ( lookup position 'y ) ) )
+        ( update row ( ( lookup position 'x ) c ) )
       )
     )
   )  
-
-  ( update-map x y #\@ )
+  
+  ( define modify-position
+    ( lambda ( position direction ) 
+      ( begin
+        ( define modifier 
+          ( lookup modifiers direction ) 
+        )
+        ( hash 
+          ( x ( + ( lookup position 'x ) ( lookup modifier 'x ) ) )
+          ( y ( + ( lookup position 'y ) ( lookup modifier 'y ) ) )
+        )        
+      )        
+    )
+  )
+  
+  ( define get-cell
+    ( lambda ( position )
+      ( lookup ( lookup map ( lookup position 'y ) ) ( lookup position 'x ) )
+    )
+  )
+  
+  ( define move
+    ( lambda ( direction )
+      ( begin
+        ( define new-position 
+          ( modify-position position direction )
+        )
+        ( define new-cell
+          ( get-cell new-position )
+        )        
+        ( define can-move
+          ( = new-cell #\space )
+        )
+        
+        ( update-map position #\space )
+        ( update position 
+          ( 'x 
+            ( if can-move
+              ( lookup new-position 'x )
+              ( lookup position 'x )
+            )
+          )
+        )
+        ( update position 
+          ( 'y 
+            ( if can-move
+              ( lookup new-position 'y )
+              ( lookup position 'y )          
+            )
+          )
+        )        
+        ( update-map position #\@ )        
+        ( out ( join map #\linefeed ) )
+      )
+    )
+  ) 
+  ( move 'none )
 )

@@ -161,11 +161,11 @@ var evalScheem, evalScheemString, lookup;
         },                
         'if': {
           func: function( expr, env ) {
-                  checkArgCount( 'if', expr.length - 1, 3 );                              
+                  checkArgCount( 'if', expr.length - 1, 2, checkArgsMode.atLeast );                              
                   var result = evalScheem( expr[ 1 ], env );
                   checkExpectedTypes( 'if', [ result ], expectBool );
                   
-                  return result === _true ? evalScheem( expr[ 2 ], env ) : evalScheem( expr[ 3 ], env );
+                  return result === _true ? evalScheem( expr[ 2 ], env ) : expr.length > 3 ? evalScheem( expr[ 3 ], env ) : _false;
                 } 
         },                
         'lambda': {
@@ -214,17 +214,22 @@ var evalScheem, evalScheemString, lookup;
         },
         'update': {
           func: function( expr, env ) {
-                  checkArgCount( 'update', expr.length - 1, 2 ); 
+                  checkArgCount( 'update', expr.length - 1, 2, checkArgsMode.atLeast ); 
                   
                   var item = evalScheem( expr[ 1 ], env ),
-                      keyValuePair = expr[ 2 ];
+                      keyValuePairs = expr.slice( 2 );
                   
-                  checkArgCount( 'keyValuePair', keyValuePair.length, 2 );        
+                  checkArgCount( 'update keyValuePairs', keyValuePairs.length, 1, checkArgsMode.atLeast );        
+                  for( var i = 0; i < keyValuePairs.length; i++ ) {
+                    var keyValuePair = keyValuePairs[ i ];
+                    checkArgCount( 'update keyValuePair ' + i, keyValuePair.length, 2 );        
+                    
+                    var key = evalScheem( keyValuePair[ 0 ], env ),
+                        value = evalScheem( keyValuePair[ 1 ], env );
+                        
+                    item[ key ] = value;                  
+                  }
                   
-                  var key = evalScheem( keyValuePair[ 0 ], env ),
-                      value = evalScheem( keyValuePair[ 1 ], env );
-                      
-                  item[ key ] = value;
                   
                   return item;
                 }      

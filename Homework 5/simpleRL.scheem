@@ -91,12 +91,9 @@
         ( define new-position 
           ( modify-position position direction )
         )
-        ( define can-move
-          ( = ( get-cell new-position ) #\space )
-        )
         
         ( update-map position #\space )        
-        ( if can-move 
+        ( if ( = ( get-cell new-position ) #\space )
           ( update position 
             ( 'x ( lookup new-position 'x ) )
             ( 'y ( lookup new-position 'y ) )
